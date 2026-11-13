@@ -3,6 +3,8 @@ import { router } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { playSound } from '../lib/audio';
+import { chooseBotMove } from '../lib/bot';
+import { recordLocalMatch } from '../lib/matchHistory';
 import {
   GameState,
   PLAYER_META,
@@ -15,6 +17,7 @@ import {
   Token,
 } from '../lib/ludo';
 import { useGameStore } from '../store/gameStore';
+import { useSettingsStore } from '../store/settingsStore';
 
 const BOARD_SIZE = 320;
 
@@ -22,7 +25,7 @@ function TokenChip({ token, color, selectable, onPress }: { token: Token; color:
   const position = getTokenDisplayPosition(token);
   const x = (position.x / 100) * BOARD_SIZE;
   const y = (position.y / 100) * BOARD_SIZE;
-  const animated = useRef(new Animated.ValueXY({ x, y })).current;
+  const [animated] = useState(() => new Animated.ValueXY({ x, y }));
 
   useEffect(() => {
     Animated.spring(animated, {
@@ -54,23 +57,79 @@ function TokenChip({ token, color, selectable, onPress }: { token: Token; color:
 
 export default function GameScreen() {
   const playerCount = useGameStore((state) => state.playerCount);
-  const [game, setGame] = useState<GameState>(() => createGameState(playerCount));
+  const selectedMode = useGameStore((state) => state.selectedMode);
+  const botDifficulty = useGameStore((state) => state.botDifficulty);
+  const soundOn = useSettingsStore((state) => state.soundEnabled);
+  const toggleSound = useSettingsStore((state) => state.toggleSound);
+  const [game, setGame] = useState<GameState>(() => createGameState(selectedMode === 'Play Against Computer' ? 2 : playerCount));
   const [dice, setDice] = useState(1);
   const [rolling, setRolling] = useState(false);
-  const [winner, setWinner] = useState<string | null>(null);
-  const [soundOn, setSoundOn] = useState(true);
+  const [botCycle, setBotCycle] = useState(0);
+  const [winner, setWinner] = useState<GameState['winner']>(null);
   const [message, setMessage] = useState('Roll the dice to begin the match.');
-  const diceSpin = useRef(new Animated.Value(0)).current;
+  const [diceSpin] = useState(() => new Animated.Value(0));
+  const botProcessing = useRef(false);
+  const matchRecorded = useRef(false);
 
   const currentPlayer = game.players[game.turnIndex]!;
+  const isBotTurn = selectedMode === 'Play Against Computer' && currentPlayer.id === 'green';
 
   useEffect(() => {
-    if (winner) {
+    if (!winner || matchRecorded.current) return;
+    matchRecorded.current = true;
+    void recordLocalMatch({
+      winner,
+      mode: selectedMode,
+      playerCount: game.players.length,
+      finishedAt: new Date().toISOString(),
+    }).catch((error: unknown) => {
+      console.warn('Could not save local match history:', error);
+    }).finally(() => {
       router.replace({ pathname: '/results', params: { winner } });
-    }
-  }, [winner]);
+    });
+  }, [game.players.length, selectedMode, winner]);
 
   const allTokens = useMemo(() => game.players.flatMap((player) => player.tokens), [game.players]);
+
+  useEffect(() => {
+    if (!isBotTurn || game.phase !== 'rolling' || winner || botProcessing.current) return;
+    botProcessing.current = true;
+    const timer = setTimeout(async () => {
+      const rolled = rollForCurrentPlayer(game);
+      const roll = rolled.dice ?? 1;
+      setDice(roll);
+      setGame(rolled);
+      setMessage(`Bot rolled ${roll}.`);
+      Animated.sequence([
+        Animated.timing(diceSpin, { toValue: 1, duration: 180, useNativeDriver: true }),
+        Animated.timing(diceSpin, { toValue: 0, duration: 180, useNativeDriver: true }),
+      ]).start();
+      if (soundOn) await playSound('roll');
+
+      if (rolled.phase === 'moving') {
+        const tokenId = chooseBotMove(rolled, botDifficulty);
+        if (tokenId) {
+          await new Promise((resolve) => setTimeout(resolve, 520));
+          const moved = moveToken(rolled, tokenId);
+          setGame(moved);
+          if (soundOn) await playSound('move');
+          if (moved.winner) {
+            setWinner(moved.winner);
+            if (soundOn) playSound('win');
+            setMessage('Bot wins the match.');
+          } else {
+            setMessage(moved.lastCapture ? 'Bot captured one of your tokens.' : 'Bot moved a token.');
+          }
+        }
+      } else {
+        setMessage(roll === 6 ? 'Bot has no legal move and rolls again.' : 'Bot has no legal move. Your turn.');
+      }
+      botProcessing.current = false;
+      setRolling(false);
+      setBotCycle((cycle) => cycle + 1);
+    }, 650);
+    return () => clearTimeout(timer);
+  }, [botCycle, botDifficulty, diceSpin, game, isBotTurn, soundOn, winner]);
 
   const rollDice = async () => {
     if (rolling || winner || game.phase !== 'rolling') return;
@@ -136,7 +195,7 @@ export default function GameScreen() {
             <Text style={styles.exitText}>Exit</Text>
           </Pressable>
           <Text style={styles.statusText}>Turn {game.turnIndex + 1} of {game.players.length}</Text>
-          <Pressable onPress={() => setSoundOn((value) => !value)}>
+          <Pressable onPress={toggleSound}>
             <Text style={styles.soundText}>{soundOn ? 'Sound On' : 'Mute'}</Text>
           </Pressable>
         </View>
@@ -144,7 +203,7 @@ export default function GameScreen() {
         <View style={styles.playerBar}>
           {game.players.map((player) => (
             <View key={player.id} style={[styles.playerPill, { backgroundColor: `${PLAYER_META[player.id].accent}22` }]}> 
-              <Text style={[styles.playerColor, { color: PLAYER_META[player.id].accent }]}>{PLAYER_META[player.id].name}</Text>
+              <Text style={[styles.playerColor, { color: PLAYER_META[player.id].accent }]}>{selectedMode === 'Play Against Computer' && player.id === 'green' ? 'Bot' : PLAYER_META[player.id].name}</Text>
             </View>
           ))}
         </View>
@@ -164,7 +223,7 @@ export default function GameScreen() {
 
             {allTokens.map((token) => (
               <TokenChip key={token.id} token={token} color={PLAYER_META[token.color].accent}
-                selectable={game.phase === 'moving' && getLegalTokens(currentPlayer, game.dice!).some((legal) => legal.id === token.id)}
+                selectable={!isBotTurn && game.phase === 'moving' && getLegalTokens(currentPlayer, game.dice!).some((legal) => legal.id === token.id)}
                 onPress={() => selectToken(token)}
               />
             ))}
@@ -177,14 +236,14 @@ export default function GameScreen() {
             <Animated.View style={[styles.dice, { transform: [{ rotate: boardRotation }] }]}>
               <Text style={styles.diceValue}>{dice}</Text>
             </Animated.View>
-            <Pressable style={[styles.rollButton, game.phase !== 'rolling' && styles.disabledButton]} onPress={rollDice} disabled={rolling || game.phase !== 'rolling'}>
-              <Text style={styles.rollButtonText}>{rolling ? 'Please wait...' : game.phase === 'moving' ? 'Choose a token' : 'Roll Dice'}</Text>
+            <Pressable style={[styles.rollButton, (game.phase !== 'rolling' || isBotTurn) && styles.disabledButton]} onPress={rollDice} disabled={rolling || game.phase !== 'rolling' || isBotTurn}>
+              <Text style={styles.rollButtonText}>{rolling || isBotTurn ? 'Please wait...' : game.phase === 'moving' ? 'Choose a token' : 'Roll Dice'}</Text>
             </Pressable>
           </View>
 
           <View style={styles.infoPanel}>
             <Text style={styles.label}>Now playing</Text>
-            <Text style={styles.playerName}>{PLAYER_META[currentPlayer.id].name}</Text>
+            <Text style={styles.playerName}>{isBotTurn ? `Bot · ${botDifficulty}` : PLAYER_META[currentPlayer.id].name}</Text>
             <Text style={styles.message}>{message}</Text>
           </View>
         </View>

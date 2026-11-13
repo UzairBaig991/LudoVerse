@@ -1,5 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { router } from 'expo-router';
 import { useGameStore } from '../store/gameStore';
 
 export default function ProfileScreen() {
@@ -27,6 +28,10 @@ export default function ProfileScreen() {
           <Text style={styles.cardTitle}>Achievements</Text>
           <Text style={styles.badges}>🏆 12 streaks • 🎲 Dice Master • ⚡ Fast Climber</Text>
         </View>
+
+        <TouchableOpacity style={styles.historyButton} onPress={() => router.push('/match-history')}>
+          <Text style={styles.historyButtonText}>View match history</Text>
+        </TouchableOpacity>
       </View>
     </LinearGradient>
   );
@@ -62,4 +67,6 @@ const styles = StyleSheet.create({
   },
   cardTitle: { color: '#FFFFFF', fontSize: 18, fontWeight: '800', marginBottom: 10 },
   badges: { color: '#D7E3FF', lineHeight: 24 },
+  historyButton: { marginTop: 14, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,215,0,0.35)', paddingVertical: 14, alignItems: 'center' },
+  historyButtonText: { color: '#FFD700', fontWeight: '800' },
 });

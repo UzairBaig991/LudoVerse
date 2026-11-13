@@ -4,8 +4,11 @@ import {
   GOAL_PROGRESS,
   PLAYER_META,
   SAFE_SQUARES,
+  TRACK,
+  advanceToken,
   canTokenMove,
   createGameState,
+  hasPlayerWon,
   moveToken,
   rollDie,
   rollForCurrentPlayer,
@@ -36,6 +39,16 @@ test('a move that overshoots the goal is illegal', () => {
   const token = { id: 'red-1', color: 'red', index: 0, state: 'track', progress: GOAL_PROGRESS - 2 };
   assert.equal(canTokenMove(token, 3), false);
   assert.equal(canTokenMove(token, 2), true);
+});
+
+test('the board loop has 52 unique cells and finishing requires the exact number', () => {
+  assert.equal(TRACK.length, 52);
+  assert.equal(new Set(TRACK.map(({ x, y }) => `${x},${y}`)).size, 52);
+  const lastStep = { id: 'red-1', color: 'red', index: 0, state: 'track', progress: GOAL_PROGRESS - 1 };
+  assert.equal(canTokenMove(lastStep, 1), true);
+  const finished = advanceToken(lastStep, 1);
+  assert.equal(finished.state, 'finish');
+  assert.equal(hasPlayerWon({ id: 'red', name: 'Red', tokens: Array.from({ length: 4 }, (_, index) => ({ ...finished, id: `red-${index + 1}`, index })) }), true);
 });
 
 test('a token on a safe square cannot be captured', () => {

@@ -13,7 +13,7 @@ const modes: MatchMode[] = [
 ];
 
 export default function GameModeScreen() {
-  const { selectedMode, setSelectedMode, setPlayerCount, playerCount } = useGameStore();
+  const { selectedMode, setSelectedMode, setPlayerCount, playerCount, botDifficulty, setBotDifficulty } = useGameStore();
 
   const handleStart = () => {
     if (selectedMode === 'Private Room') {
@@ -44,6 +44,23 @@ export default function GameModeScreen() {
             <Text style={[styles.modeText, selectedMode === mode && styles.selectedModeText]}>{mode}</Text>
           </TouchableOpacity>
         ))}
+
+        {selectedMode === 'Play Against Computer' && (
+          <View style={styles.difficultySection}>
+            <Text style={styles.difficultyLabel}>Bot difficulty</Text>
+            <View style={styles.playerRow}>
+              {(['Easy', 'Medium', 'Hard'] as const).map((difficulty) => (
+                <TouchableOpacity
+                  key={difficulty}
+                  style={[styles.playerButton, botDifficulty === difficulty && styles.selectedPlayerButton]}
+                  onPress={() => setBotDifficulty(difficulty)}
+                >
+                  <Text style={[styles.playerButtonText, botDifficulty === difficulty && styles.selectedPlayerText]}>{difficulty}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
 
         <View style={styles.playerRow}>
           {[2, 3, 4].map((value) => (
@@ -91,6 +108,8 @@ const styles = StyleSheet.create({
     marginTop: 18,
     marginBottom: 20,
   },
+  difficultySection: { marginTop: 6 },
+  difficultyLabel: { color: '#B9C9FF', fontSize: 13, fontWeight: '700', marginLeft: 4 },
   playerButton: {
     flex: 1,
     backgroundColor: 'rgba(255,255,255,0.04)',

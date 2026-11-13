@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { BotDifficulty } from '../lib/bot';
 
 export type MatchMode =
   | 'Quick Match'
@@ -20,6 +21,7 @@ interface GameStore {
   roomCode: string;
   rooms: string[];
   playerCount: number;
+  botDifficulty: BotDifficulty;
   profile: {
     username: string;
     level: number;
@@ -31,6 +33,7 @@ interface GameStore {
   leaderboard: LeaderboardEntry[];
   setSelectedMode: (mode: MatchMode) => void;
   setPlayerCount: (count: number) => void;
+  setBotDifficulty: (difficulty: BotDifficulty) => void;
   createRoom: () => void;
   joinRoom: (code: string) => void;
   resetRoom: () => void;
@@ -50,6 +53,7 @@ export const useGameStore = create<GameStore>((set) => ({
   roomCode: 'LV-2048',
   rooms: ['LV-2048', 'LV-4421'],
   playerCount: 4,
+  botDifficulty: 'Medium',
   profile: {
     username: 'Astra Knight',
     level: 34,
@@ -66,6 +70,7 @@ export const useGameStore = create<GameStore>((set) => ({
   ],
   setSelectedMode: (mode) => set({ selectedMode: mode }),
   setPlayerCount: (count) => set({ playerCount: count }),
+  setBotDifficulty: (botDifficulty) => set({ botDifficulty }),
   createRoom: () =>
     set((state) => {
       const nextCode = createRoomCode();

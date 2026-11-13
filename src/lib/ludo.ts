@@ -48,19 +48,23 @@ export const PLAYER_META: Record<ColorKey, { name: string; accent: string; home:
   blue: { name: 'Blue', accent: '#2196F3', home: [{ x: 68, y: 68 }, { x: 80, y: 68 }, { x: 68, y: 80 }, { x: 80, y: 80 }], entry: 39 },
 };
 
-// Board points are percentages so the view can scale with the available screen width.
-export const TRACK: Array<{ x: number; y: number }> = [
-  [50, 6], [60, 6], [70, 6], [80, 6], [88, 12], [88, 22], [88, 32], [88, 42], [88, 50],
-  [80, 50], [70, 50], [60, 50], [50, 50], [40, 50], [30, 50], [20, 50], [12, 50], [12, 42],
-  [12, 32], [12, 22], [12, 12], [20, 12], [30, 12], [40, 12], [50, 12], [50, 18], [50, 26],
-  [50, 34], [50, 42], [44, 50], [36, 50], [28, 50], [20, 50], [20, 42], [20, 34], [20, 26],
-  [20, 18], [28, 18], [36, 18], [44, 18], [50, 18], [60, 18], [70, 18], [80, 18], [80, 28],
-  [80, 38], [80, 48], [70, 48], [60, 48], [50, 48], [48, 50], [52, 50],
-].map(([x, y]) => ({ x: x!, y: y! }));
-
-export const FINISH_PATH: Array<{ x: number; y: number }> = [
-  { x: 50, y: 18 }, { x: 57, y: 25 }, { x: 50, y: 32 }, { x: 43, y: 25 }, { x: 50, y: 42 }, { x: 50, y: 50 },
+// A clockwise 15 × 15 board loop. Coordinates are cell centers normalized to percentages.
+const TRACK_GRID: [number, number][] = [
+  [6, 1], [6, 2], [6, 3], [6, 4], [6, 5], [5, 6], [4, 6], [3, 6], [2, 6], [1, 6], [0, 6], [0, 7], [0, 8],
+  [1, 8], [2, 8], [3, 8], [4, 8], [5, 8], [6, 9], [6, 10], [6, 11], [6, 12], [6, 13], [6, 14], [7, 14], [8, 14],
+  [8, 13], [8, 12], [8, 11], [8, 10], [8, 9], [9, 8], [10, 8], [11, 8], [12, 8], [13, 8], [14, 8], [14, 7], [14, 6],
+  [13, 6], [12, 6], [11, 6], [10, 6], [9, 6], [8, 5], [8, 4], [8, 3], [8, 2], [8, 1], [8, 0], [7, 0], [6, 0],
 ];
+
+const toPercent = (cell: number) => ((cell + 0.5) / 15) * 100;
+export const TRACK: { x: number; y: number }[] = TRACK_GRID.map(([x, y]) => ({ x: toPercent(x), y: toPercent(y) }));
+
+export const FINISH_PATH: Record<ColorKey, { x: number; y: number }[]> = {
+  red: Array.from({ length: 6 }, (_, index) => ({ x: toPercent(7), y: toPercent(index + 1) })),
+  green: Array.from({ length: 6 }, (_, index) => ({ x: toPercent(13 - index), y: toPercent(7) })),
+  yellow: Array.from({ length: 6 }, (_, index) => ({ x: toPercent(7), y: toPercent(13 - index) })),
+  blue: Array.from({ length: 6 }, (_, index) => ({ x: toPercent(index + 1), y: toPercent(7) })),
+};
 
 export const buildInitialPlayers = (playerCount = 4): PlayerState[] =>
   PLAYER_ORDER.slice(0, Math.max(2, Math.min(4, playerCount))).map((color) => ({
@@ -79,7 +83,7 @@ export const getTokenDisplayPosition = (token: Token) => {
     const trackIndex = (PLAYER_META[token.color].entry + token.progress) % TRACK_LENGTH;
     return TRACK[trackIndex]!;
   }
-  return FINISH_PATH[Math.min(token.progress - TRACK_LENGTH, FINISH_PATH.length - 1)]!;
+  return FINISH_PATH[token.color][Math.min(token.progress - TRACK_LENGTH, HOME_STRETCH_LENGTH - 1)]!;
 };
 
 export const getLegalTokens = (player: PlayerState, roll: number): Token[] =>

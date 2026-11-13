@@ -1,10 +1,10 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
 
 export default function SplashScreen() {
-  const scale = new Animated.Value(0.85);
+  const [scale] = useState(() => new Animated.Value(0.85));
 
   useEffect(() => {
     Animated.spring(scale, {

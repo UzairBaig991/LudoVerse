@@ -1,22 +1,26 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { PLAYER_META, ColorKey } from '../lib/ludo';
+import { useGameStore } from '../store/gameStore';
 
 export default function ResultsScreen() {
   const params = useLocalSearchParams<{ winner?: string }>();
-  const winner = params.winner ?? 'Red';
+  const selectedMode = useGameStore((state) => state.selectedMode);
+  const winner = (params.winner ?? 'red') as ColorKey;
+  const winnerName = PLAYER_META[winner]?.name ?? 'Player';
 
   return (
     <LinearGradient colors={['#10152A', '#151B35', '#1A254A']} style={styles.background}>
       <View style={styles.container}>
-        <Text style={styles.eyebrow}>Match Complete</Text>
-        <Text style={styles.title}>{winner} wins</Text>
+        <Text style={styles.eyebrow}>Local match complete</Text>
+        <Text style={styles.title}>{winnerName} wins</Text>
 
         <View style={styles.card}>
-          <Text style={styles.label}>Rewards</Text>
-          <Text style={styles.value}>+480 coins</Text>
-          <Text style={styles.label}>Rank</Text>
-          <Text style={styles.value}>#1</Text>
+          <Text style={styles.label}>Match mode</Text>
+          <Text style={styles.value}>{selectedMode}</Text>
+          <Text style={styles.label}>Tokens finished</Text>
+          <Text style={styles.value}>4 / 4</Text>
         </View>
 
         <TouchableOpacity style={styles.primaryButton} onPress={() => router.replace('/game')}>
