@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { canResumeRoom, CODE_ALPHABET, findOpenSeat, isValidRoomCode, makeRoomCode } from '../lib/functions/src/roomLogic.js';
+import { canResumeRoom, CODE_ALPHABET, findOpenSeat, isValidRoomCode, makeRoomCode, takeQuickMatchPlayers } from '../lib/functions/src/roomLogic.js';
 
 test('room code alphabet excludes ambiguous characters and has enough symbols', () => {
   assert.equal(CODE_ALPHABET.length, 32);
@@ -27,4 +27,12 @@ test('existing room members can resume active and completed rooms but not expire
   assert.equal(canResumeRoom('waiting', 'a', ['a', 'b'], 200, 100), true);
   assert.equal(canResumeRoom('waiting', 'a', ['a', 'b'], 100, 100), false);
   assert.equal(canResumeRoom('playing', 'outsider', ['a', 'b'], 1000, 100), false);
+});
+
+test('quick matchmaking keeps FIFO order and waits until the selected capacity is full', () => {
+  const waiting = [{ uid: 'one', displayName: 'One' }, { uid: 'two', displayName: 'Two' }];
+  assert.equal(takeQuickMatchPlayers(waiting, 3), null);
+  const result = takeQuickMatchPlayers([...waiting, { uid: 'three', displayName: 'Three' }], 3);
+  assert.deepEqual(result?.matched.map((player) => player.uid), ['one', 'two', 'three']);
+  assert.deepEqual(result?.waiting, []);
 });

@@ -39,6 +39,10 @@ The functions own room creation, seat allocation, readiness, start, die rolls, a
 
 The client subscribes to `gameState` and submits only an action ID, expected state version, and token ID; it cannot write game state directly.
 
+### `quickMatchQueues/{playerCount}` and `quickMatchTickets/{uid}`
+
+Quick-match queue documents are server-only. Authenticated users can read only their own ticket document; they cannot write tickets or read the shared queue. Tickets expire after two minutes. Callable transactions pair players who selected the same capacity, create an already-started room, and update every selected ticket to the same room code atomically. Expired queue entries are removed as later searches run; a waiting client can cancel its ticket.
+
 ### `matches/{matchId}`
 
 Written atomically by the winning move's Cloud Function transaction. The document ID is the room code; only a listed participant may read it directly, and clients cannot list or write match records.

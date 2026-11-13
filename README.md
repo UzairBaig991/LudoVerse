@@ -40,7 +40,7 @@ Copy `.env.example` to `.env` and fill in the web-app configuration values from 
 
 Enable Email/Password and Anonymous sign-in in Firebase Authentication. Create the default Firestore database and deploy the checked-in `firestore.rules` before relying on profile reads or writes. Without `.env` values, account sign-in stays unavailable and local offline play continues to work. Google sign-in is not implemented yet.
 
-Private rooms also require deploying the callable functions in `functions/` (`npm install` there, then `npm run build`) and deploying the Firestore rules. Functions use the Admin SDK, so do not expose service credentials to the client. Room lifecycle, dice rolls, and moves are server-authoritative; signed-in room members receive shared game state through Firestore.
+Online private rooms and Quick Match also require deploying the callable functions in `functions/` (`npm install` there, then `npm run build`) and deploying the Firestore rules. Functions use the Admin SDK, so do not expose service credentials to the client. Room lifecycle, matchmaking, dice rolls, and moves are server-authoritative; signed-in room members receive shared game state through Firestore.
 
 See [docs/FIRESTORE_SCHEMA.md](./docs/FIRESTORE_SCHEMA.md) for the planned collections and access model.
 
@@ -50,4 +50,4 @@ Sprint 4 is in progress. See [DEVELOPMENT_PROGRESS.md](./DEVELOPMENT_PROGRESS.md
 
 ## Backend status
 
-Firebase project values have not been provided. Email and anonymous authentication, private rooms, and authoritative online turns are wired but cannot connect until configured and deployed. Matchmaking, reconnect/abandoned-turn handling, rewards, and social features remain future work. Local client-side play is not secure online multiplayer.
+Firebase project values have not been provided. Email and anonymous authentication, private rooms, Quick Match, and authoritative online turns are wired but cannot connect until configured and deployed. Automatic abandoned-turn handling, rewards, and social features remain future work. Local client-side play is not secure online multiplayer.

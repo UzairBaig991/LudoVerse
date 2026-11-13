@@ -199,6 +199,9 @@ export const findQuickMatch = onCall(async (request) => {
     }
 
     if (currentTicket?.status === 'waiting' && currentTicket.expiresAt.toMillis() > now.toMillis()) {
+      if (currentTicket.playerCount !== playerCount) {
+        throw new HttpsError('failed-precondition', `You already have a ${currentTicket.playerCount}-player search. Cancel it before changing the match size.`);
+      }
       const existingQueue = queueSnapshot.exists ? queueSnapshot.data() as QuickMatchQueue : null;
       const position = existingQueue?.waitingPlayers.findIndex((player) => player.uid === uid) ?? -1;
       return { status: 'waiting' as const, position: Math.max(1, position + 1), expiresAt: currentTicket.expiresAt.toMillis() };

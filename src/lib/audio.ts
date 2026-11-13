@@ -1,4 +1,4 @@
-import { Audio } from 'expo-av';
+import { createAudioPlayer, type AudioPlayer } from 'expo-audio';
 
 export type SoundKey = 'roll' | 'move' | 'capture' | 'win';
 
@@ -9,30 +9,24 @@ const soundMap: Record<SoundKey, number> = {
   win: require('../../assets/sounds/victory.wav'),
 };
 
-const soundCache: Partial<Record<SoundKey, Audio.Sound>> = {};
+const soundCache: Partial<Record<SoundKey, AudioPlayer>> = {};
 
 export const playSound = async (key: SoundKey) => {
   try {
-    if (!soundCache[key]) {
-      const { sound } = await Audio.Sound.createAsync(soundMap[key]);
-      soundCache[key] = sound;
-    }
+    const player = soundCache[key] ?? createAudioPlayer(soundMap[key]);
+    soundCache[key] = player;
 
-    const cache = soundCache[key];
-    if (!cache) {
-      return;
-    }
-
-    await cache.stopAsync();
-    await cache.setPositionAsync(0);
-    await cache.playAsync();
+    player.pause();
+    await player.seekTo(0);
+    player.play();
   } catch (error) {
     console.log('Audio playback failed:', error);
   }
 };
 
-export const disposeAudio = async () => {
-  for (const sound of Object.values(soundCache)) {
-    await sound.unloadAsync();
+export const disposeAudio = () => {
+  for (const key of Object.keys(soundCache) as SoundKey[]) {
+    soundCache[key]?.remove();
+    delete soundCache[key];
   }
 };

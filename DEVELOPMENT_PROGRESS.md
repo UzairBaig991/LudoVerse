@@ -53,19 +53,21 @@ Pending in this sprint:
 - Added server-authoritative online game initialization, cryptographic dice, legal token moves, active-player checks, idempotent action receipts, and stale-state version checks.
 - Reused the local TypeScript game engine in Cloud Functions so online and offline rules stay aligned.
 - Connected the board to live room game state and routed online rolls and moves through callable functions.
+- Added transactional Quick Match queues for 2, 3, or 4 players, with private per-user tickets, cancellation, expiry, and server-created active rooms.
+- Routed Quick Match mode and the home shortcut into the online queue; matched players enter the shared live-room flow.
 
 Pending in this sprint:
 
 - Add local Firebase project values and enable the selected Auth providers.
 - Validate account flows and profile creation against the configured Firebase project.
 - Configure Firebase Functions, deploy functions/rules, and verify private-room lifecycle with multiple authenticated devices.
-- Implement matchmaking and abandoned-turn timeout rules; existing room members can resume their saved seat and game state by re-entering the room code.
+- Define and implement abandoned-turn timeout rules; existing room members can resume their saved seat and game state by re-entering the room code.
 - Validate completed-match records and gameplay across multiple authenticated devices.
 - Test Firestore rules with the Firebase Emulator before deployment.
 
 ### Sprint 5 — Security and social features
 
-- Pending: validate Firestore rules and online transactions in the Firebase Emulator, then add matchmaking, reconnect handling, invitations, reactions, and rewards.
+- Pending: validate Firestore rules and online transactions in the Firebase Emulator, then add abandoned-turn handling, invitations, reactions, and rewards.
 
 ### Sprint 6 — Release preparation
 
@@ -84,3 +86,4 @@ Pending in this sprint:
 Firebase Auth and online room actions could not be exercised against a live project because project configuration has not been provided. Cloud Functions have not been deployed or emulator-tested. SQLite-backed history still needs a native device run.
 
 Online completion and reconnect helper tests are included in the Functions test suite.
+Quick Match FIFO/capacity helper coverage is included; callable queue transactions still need Firebase Emulator validation.

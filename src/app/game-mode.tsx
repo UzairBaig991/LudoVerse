@@ -16,6 +16,11 @@ export default function GameModeScreen() {
   const { selectedMode, setSelectedMode, setPlayerCount, playerCount, botDifficulty, setBotDifficulty } = useGameStore();
 
   const handleStart = () => {
+    if (selectedMode === 'Quick Match') {
+      router.push('/matchmaking');
+      return;
+    }
+
     if (selectedMode === 'Private Room') {
       router.push('/room');
       return;

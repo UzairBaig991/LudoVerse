@@ -10,7 +10,7 @@ const quickStats = [
 ];
 
 const gameModes = [
-  { label: 'Quick Match', value: '2 min', route: '/game' },
+  { label: 'Quick Match', value: 'Online', route: '/matchmaking' },
   { label: 'Friends', value: 'Private', route: '/room' },
   { label: 'Offline', value: '4 players', route: '/game' },
   { label: 'Computer', value: 'Bot', route: '/game' },
