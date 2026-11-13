@@ -1,7 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import { AccessibilityInfo, Animated, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { playSound } from '../lib/audio';
 import { chooseBotMove } from '../lib/bot';
 import { recordLocalMatch } from '../lib/matchHistory';
@@ -19,22 +19,25 @@ import {
 import { useGameStore } from '../store/gameStore';
 import { useSettingsStore } from '../store/settingsStore';
 
-const BOARD_SIZE = 320;
-
-function TokenChip({ token, color, selectable, onPress }: { token: Token; color: string; selectable: boolean; onPress: () => void }) {
+function TokenChip({ token, color, boardSize, reducedMotion, selectable, onPress }: { token: Token; color: string; boardSize: number; reducedMotion: boolean; selectable: boolean; onPress: () => void }) {
   const position = getTokenDisplayPosition(token);
-  const x = (position.x / 100) * BOARD_SIZE;
-  const y = (position.y / 100) * BOARD_SIZE;
+  const tokenSize = Math.max(14, boardSize * 0.0625);
+  const x = (position.x / 100) * boardSize - tokenSize / 2;
+  const y = (position.y / 100) * boardSize - tokenSize / 2;
   const [animated] = useState(() => new Animated.ValueXY({ x, y }));
 
   useEffect(() => {
+    if (reducedMotion) {
+      animated.setValue({ x, y });
+      return;
+    }
     Animated.spring(animated, {
       toValue: { x, y },
       friction: 9,
       tension: 80,
       useNativeDriver: true,
     }).start();
-  }, [animated, x, y]);
+  }, [animated, reducedMotion, x, y]);
 
   return (
     <Animated.View
@@ -49,13 +52,15 @@ function TokenChip({ token, color, selectable, onPress }: { token: Token; color:
         accessibilityLabel={`${token.color} token ${token.index + 1}${selectable ? ', legal move' : ''}`}
         disabled={!selectable}
         onPress={onPress}
-        style={[styles.token, { backgroundColor: color, borderColor: selectable ? '#FFD700' : '#FFFFFF', borderWidth: selectable ? 3 : 2 }]}
+        style={[styles.token, { width: tokenSize, height: tokenSize, borderRadius: tokenSize / 2, backgroundColor: color, borderColor: selectable ? '#FFD700' : '#FFFFFF', borderWidth: selectable ? 3 : 2 }]}
       />
     </Animated.View>
   );
 }
 
 export default function GameScreen() {
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const boardSize = Math.max(180, Math.min(windowWidth - 36, windowHeight * 0.42, 420));
   const playerCount = useGameStore((state) => state.playerCount);
   const selectedMode = useGameStore((state) => state.selectedMode);
   const botDifficulty = useGameStore((state) => state.botDifficulty);
@@ -67,12 +72,36 @@ export default function GameScreen() {
   const [botCycle, setBotCycle] = useState(0);
   const [winner, setWinner] = useState<GameState['winner']>(null);
   const [message, setMessage] = useState('Roll the dice to begin the match.');
+  const [reducedMotion, setReducedMotion] = useState(false);
   const [diceSpin] = useState(() => new Animated.Value(0));
   const botProcessing = useRef(false);
   const matchRecorded = useRef(false);
 
   const currentPlayer = game.players[game.turnIndex]!;
   const isBotTurn = selectedMode === 'Play Against Computer' && currentPlayer.id === 'green';
+
+  useEffect(() => {
+    let mounted = true;
+    void AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
+      if (mounted) setReducedMotion(enabled);
+    });
+    const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', setReducedMotion);
+    return () => {
+      mounted = false;
+      subscription.remove();
+    };
+  }, []);
+
+  const animateDiceRoll = () => {
+    if (reducedMotion) {
+      diceSpin.setValue(0);
+      return;
+    }
+    Animated.sequence([
+      Animated.timing(diceSpin, { toValue: 1, duration: 180, useNativeDriver: true }),
+      Animated.timing(diceSpin, { toValue: 0, duration: 180, useNativeDriver: true }),
+    ]).start();
+  };
 
   useEffect(() => {
     if (!winner || matchRecorded.current) return;
@@ -100,10 +129,7 @@ export default function GameScreen() {
       setDice(roll);
       setGame(rolled);
       setMessage(`Bot rolled ${roll}.`);
-      Animated.sequence([
-        Animated.timing(diceSpin, { toValue: 1, duration: 180, useNativeDriver: true }),
-        Animated.timing(diceSpin, { toValue: 0, duration: 180, useNativeDriver: true }),
-      ]).start();
+      animateDiceRoll();
       if (soundOn) await playSound('roll');
 
       if (rolled.phase === 'moving') {
@@ -129,7 +155,7 @@ export default function GameScreen() {
       setBotCycle((cycle) => cycle + 1);
     }, 650);
     return () => clearTimeout(timer);
-  }, [botCycle, botDifficulty, diceSpin, game, isBotTurn, soundOn, winner]);
+  }, [botCycle, botDifficulty, game, isBotTurn, soundOn, winner]);
 
   const rollDice = async () => {
     if (rolling || winner || game.phase !== 'rolling') return;
@@ -140,10 +166,7 @@ export default function GameScreen() {
     setMessage(`${PLAYER_META[currentPlayer.id].name} rolled ${nextRoll}.`);
     setGame(nextGame);
 
-    Animated.sequence([
-      Animated.timing(diceSpin, { toValue: 1, duration: 180, useNativeDriver: true }),
-      Animated.timing(diceSpin, { toValue: 0, duration: 180, useNativeDriver: true }),
-    ]).start();
+    animateDiceRoll();
 
     if (soundOn) {
       await playSound('roll');
@@ -209,20 +232,20 @@ export default function GameScreen() {
         </View>
 
         <View style={styles.boardWrap}>
-          <LinearGradient colors={['#1A254A', '#10152A']} style={styles.board}>
+          <LinearGradient colors={['#1A254A', '#10152A']} style={[styles.board, { width: boardSize, height: boardSize }]}>
             <View style={[styles.quadrant, styles.redQuadrant]} />
             <View style={[styles.quadrant, styles.greenQuadrant]} />
             <View style={[styles.quadrant, styles.yellowQuadrant]} />
             <View style={[styles.quadrant, styles.blueQuadrant]} />
 
             {TRACK.map((point, index) => (
-              <View key={`${point.x}-${point.y}-${index}`} style={[styles.trackDot, { left: `${point.x}%`, top: `${point.y}%` }]} />
+              <View key={`${point.x}-${point.y}-${index}`} style={[styles.trackDot, { width: boardSize / 32, height: boardSize / 32, borderRadius: boardSize / 64, left: `${point.x}%`, top: `${point.y}%`, marginLeft: -boardSize / 64, marginTop: -boardSize / 64 }]} />
             ))}
 
-            <View style={styles.centerPath} />
+            <View style={[styles.centerPath, { width: boardSize * 0.14, height: boardSize * 0.14, borderRadius: boardSize * 0.07, marginLeft: -boardSize * 0.07, marginTop: -boardSize * 0.07 }]} />
 
             {allTokens.map((token) => (
-              <TokenChip key={token.id} token={token} color={PLAYER_META[token.color].accent}
+              <TokenChip key={token.id} token={token} color={PLAYER_META[token.color].accent} boardSize={boardSize} reducedMotion={reducedMotion}
                 selectable={!isBotTurn && game.phase === 'moving' && getLegalTokens(currentPlayer, game.dice!).some((legal) => legal.id === token.id)}
                 onPress={() => selectToken(token)}
               />
@@ -233,7 +256,7 @@ export default function GameScreen() {
         <View style={styles.bottomPanel}>
           <View style={styles.dicePanel}>
             <Text style={styles.label}>Dice</Text>
-            <Animated.View style={[styles.dice, { transform: [{ rotate: boardRotation }] }]}>
+            <Animated.View style={[styles.dice, { transform: [{ rotate: reducedMotion ? '0deg' : boardRotation }] }]}>
               <Text style={styles.diceValue}>{dice}</Text>
             </Animated.View>
             <Pressable style={[styles.rollButton, (game.phase !== 'rolling' || isBotTurn) && styles.disabledButton]} onPress={rollDice} disabled={rolling || game.phase !== 'rolling' || isBotTurn}>
@@ -269,8 +292,6 @@ const styles = StyleSheet.create({
   playerColor: { fontWeight: '700' },
   boardWrap: { alignItems: 'center', justifyContent: 'center' },
   board: {
-    width: BOARD_SIZE,
-    height: BOARD_SIZE,
     borderRadius: 30,
     overflow: 'hidden',
     borderWidth: 2,

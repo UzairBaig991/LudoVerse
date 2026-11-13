@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getRecentMatches, MatchRecord } from '../lib/matchHistory';
@@ -9,20 +9,25 @@ export default function MatchHistoryScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
-  const loadMatches = useCallback(async () => {
-    try {
-      setMatches(await getRecentMatches());
-      setError(false);
-    } catch {
-      setError(true);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
-    void loadMatches();
-  }, [loadMatches]);
+    let active = true;
+    getRecentMatches()
+      .then((rows) => {
+        if (active) {
+          setMatches(rows);
+          setError(false);
+        }
+      })
+      .catch(() => {
+        if (active) setError(true);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <LinearGradient colors={['#10152A', '#151B35', '#1A254A']} style={styles.background}>

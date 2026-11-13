@@ -62,17 +62,21 @@ export default function GameModeScreen() {
           </View>
         )}
 
-        <View style={styles.playerRow}>
-          {[2, 3, 4].map((value) => (
-            <TouchableOpacity
-              key={value}
-              style={[styles.playerButton, playerCount === value && styles.selectedPlayerButton]}
-              onPress={() => setPlayerCount(value)}
-            >
-              <Text style={[styles.playerButtonText, playerCount === value && styles.selectedPlayerText]}>{value}P</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        {selectedMode === 'Play Against Computer' ? (
+          <Text style={styles.botMatchHint}>2 players · You versus the bot</Text>
+        ) : (
+          <View style={styles.playerRow}>
+            {[2, 3, 4].map((value) => (
+              <TouchableOpacity
+                key={value}
+                style={[styles.playerButton, playerCount === value && styles.selectedPlayerButton]}
+                onPress={() => setPlayerCount(value)}
+              >
+                <Text style={[styles.playerButtonText, playerCount === value && styles.selectedPlayerText]}>{value}P</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
 
         <TouchableOpacity style={styles.primaryButton} onPress={handleStart}>
           <Text style={styles.primaryButtonText}>Start Match</Text>
@@ -110,6 +114,7 @@ const styles = StyleSheet.create({
   },
   difficultySection: { marginTop: 6 },
   difficultyLabel: { color: '#B9C9FF', fontSize: 13, fontWeight: '700', marginLeft: 4 },
+  botMatchHint: { color: '#D7E3FF', marginTop: 18, marginBottom: 20, textAlign: 'center', fontWeight: '700' },
   playerButton: {
     flex: 1,
     backgroundColor: 'rgba(255,255,255,0.04)',
