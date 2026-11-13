@@ -1,5 +1,6 @@
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { doc, onSnapshot } from 'firebase/firestore';
+import { GameState } from '../../lib/ludo';
 import { firebaseApp, firebaseAuth, firestore, isFirebaseConfigured } from '../firebase/client';
 
 export interface PrivateRoomPlayer {
@@ -16,6 +17,9 @@ export interface PrivateRoom {
   playerUids: string[];
   players: PrivateRoomPlayer[];
   status: 'waiting' | 'playing';
+  gameState?: GameState;
+  lastAction?: { requestId: string; uid: string; type: 'roll' | 'move' };
+  stateVersion?: number;
   expiresAt?: { toMillis: () => number };
 }
 
@@ -47,6 +51,18 @@ export const setPrivateRoomReady = (roomCode: string, ready: boolean) =>
 
 export const startPrivateRoom = (roomCode: string) =>
   callRoomFunction<{ roomCode: string }, { status: 'playing' }>('startPrivateRoom', { roomCode });
+
+export const makeOnlineActionId = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+
+export const rollOnlineDie = (roomCode: string, requestId: string, stateVersion: number) =>
+  callRoomFunction<{ roomCode: string; requestId: string; stateVersion: number }, { die: number; hasMove: boolean; stateVersion: number }>(
+    'rollOnlineDie', { roomCode, requestId, stateVersion },
+  );
+
+export const moveOnlineToken = (roomCode: string, tokenId: string, requestId: string, stateVersion: number) =>
+  callRoomFunction<{ roomCode: string; tokenId: string; requestId: string; stateVersion: number }, { captured: boolean; winner: string | null; stateVersion: number }>(
+    'moveOnlineToken', { roomCode, tokenId, requestId, stateVersion },
+  );
 
 export const subscribeToPrivateRoom = (
   roomCode: string,

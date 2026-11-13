@@ -4,10 +4,10 @@
     "moduleResolution": "NodeNext",
     "target": "ES2022",
     "outDir": "lib",
-    "rootDir": "src",
+    "rootDir": "..",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts", "../src/lib/ludo.ts"]
 }

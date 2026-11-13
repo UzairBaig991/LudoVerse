@@ -29,9 +29,12 @@ Created and updated by callable Cloud Functions only. A room code is eight chara
 | `playerUids` | string[] | Membership list used by read rules. |
 | `players` | object[] | `{ uid, displayName, seat, ready }`; seat assignment is transactional. |
 | `status` | string | `waiting` or `playing`. |
+| `gameState` | object | Shared engine state initialized at start and updated only by server roll/move functions. |
+| `stateVersion` | number | Incremented per accepted action; rejects stale client actions. |
+| `lastAction` | object | Most recent action ID and result for idempotent retry handling. |
 | `createdAt`, `updatedAt`, `expiresAt` | timestamp | Server-owned timestamps; waiting rooms expire after two hours. |
 
-The functions own room creation, seat allocation, readiness, and the waiting-to-playing transition. The current `playing` state does not yet include synchronized game state or turns.
+The functions own room creation, seat allocation, readiness, start, die rolls, and token moves. The client subscribes to `gameState` and submits only an action ID, expected state version, and token ID; it cannot write game state directly.
 
 ### `matches/{matchId}`
 

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { CODE_ALPHABET, findOpenSeat, isValidRoomCode, makeRoomCode } from '../lib/roomLogic.js';
+import { CODE_ALPHABET, findOpenSeat, isValidRoomCode, makeRoomCode } from '../lib/functions/src/roomLogic.js';
 
 test('room code alphabet excludes ambiguous characters and has enough symbols', () => {
   assert.equal(CODE_ALPHABET.length, 32);

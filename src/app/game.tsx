@@ -1,7 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AccessibilityInfo, Animated, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { AccessibilityInfo, ActivityIndicator, Animated, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { playSound } from '../lib/audio';
 import { chooseBotMove } from '../lib/bot';
 import { recordLocalMatch } from '../lib/matchHistory';
@@ -18,6 +18,8 @@ import {
 } from '../lib/ludo';
 import { useGameStore } from '../store/gameStore';
 import { useSettingsStore } from '../store/settingsStore';
+import { makeOnlineActionId, moveOnlineToken, PrivateRoom, rollOnlineDie, subscribeToPrivateRoom } from '../services/rooms/privateRooms';
+import { firebaseAuth } from '../services/firebase/client';
 
 function TokenChip({ token, color, boardSize, reducedMotion, selectable, onPress }: { token: Token; color: string; boardSize: number; reducedMotion: boolean; selectable: boolean; onPress: () => void }) {
   const position = getTokenDisplayPosition(token);
@@ -59,6 +61,11 @@ function TokenChip({ token, color, boardSize, reducedMotion, selectable, onPress
 }
 
 export default function GameScreen() {
+  const params = useLocalSearchParams<{ roomCode?: string | string[] }>();
+  const roomCode = Array.isArray(params.roomCode) ? params.roomCode[0] : params.roomCode;
+  const [onlineRoom, setOnlineRoom] = useState<PrivateRoom | null>(null);
+  const [onlineError, setOnlineError] = useState('');
+  const pendingActionId = useRef<string | null>(null);
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const boardSize = Math.max(180, Math.min(windowWidth - 36, windowHeight * 0.42, 420));
   const playerCount = useGameStore((state) => state.playerCount);
@@ -66,11 +73,11 @@ export default function GameScreen() {
   const botDifficulty = useGameStore((state) => state.botDifficulty);
   const soundOn = useSettingsStore((state) => state.soundEnabled);
   const toggleSound = useSettingsStore((state) => state.toggleSound);
-  const [game, setGame] = useState<GameState>(() => createGameState(selectedMode === 'Play Against Computer' ? 2 : playerCount));
+  const [localGame, setLocalGame] = useState<GameState>(() => createGameState(selectedMode === 'Play Against Computer' ? 2 : playerCount));
+  const game = onlineRoom?.gameState ?? localGame;
   const [dice, setDice] = useState(1);
   const [rolling, setRolling] = useState(false);
   const [botCycle, setBotCycle] = useState(0);
-  const [winner, setWinner] = useState<GameState['winner']>(null);
   const [message, setMessage] = useState('Roll the dice to begin the match.');
   const [reducedMotion, setReducedMotion] = useState(false);
   const [diceSpin] = useState(() => new Animated.Value(0));
@@ -78,7 +85,25 @@ export default function GameScreen() {
   const matchRecorded = useRef(false);
 
   const currentPlayer = game.players[game.turnIndex]!;
-  const isBotTurn = selectedMode === 'Play Against Computer' && currentPlayer.id === 'green';
+  const isOnlineTurn = !roomCode || onlineRoom?.players.find((player) => player.seat === game.turnIndex)?.uid === firebaseAuth?.currentUser?.uid;
+  const isBotTurn = !roomCode && selectedMode === 'Play Against Computer' && currentPlayer.id === 'green';
+  const winner = game.winner;
+
+  useEffect(() => {
+    if (!roomCode) return undefined;
+    return subscribeToPrivateRoom(roomCode, (room) => {
+      setOnlineRoom(room);
+      setOnlineError('');
+      if (room?.lastAction?.requestId === pendingActionId.current) {
+        pendingActionId.current = null;
+        setRolling(false);
+      }
+    }, (error) => setOnlineError(
+      'code' in error && error.code === 'permission-denied'
+        ? 'Your account is not a member of this room.'
+        : 'Could not connect to the online room. Check your connection.',
+    ));
+  }, [roomCode]);
 
   useEffect(() => {
     let mounted = true;
@@ -104,7 +129,7 @@ export default function GameScreen() {
   }, [diceSpin, reducedMotion]);
 
   useEffect(() => {
-    if (!winner || matchRecorded.current) return;
+    if (!winner || matchRecorded.current || roomCode) return;
     matchRecorded.current = true;
     void recordLocalMatch({
       winner,
@@ -116,7 +141,7 @@ export default function GameScreen() {
     }).finally(() => {
       router.replace({ pathname: '/results', params: { winner } });
     });
-  }, [game.players.length, selectedMode, winner]);
+  }, [game.players.length, roomCode, selectedMode, winner]);
 
   const allTokens = useMemo(() => game.players.flatMap((player) => player.tokens), [game.players]);
 
@@ -127,7 +152,7 @@ export default function GameScreen() {
       const rolled = rollForCurrentPlayer(game);
       const roll = rolled.dice ?? 1;
       setDice(roll);
-      setGame(rolled);
+      setLocalGame(rolled);
       setMessage(`Bot rolled ${roll}.`);
       animateDiceRoll();
       if (soundOn) await playSound('roll');
@@ -137,10 +162,9 @@ export default function GameScreen() {
         if (tokenId) {
           await new Promise((resolve) => setTimeout(resolve, 520));
           const moved = moveToken(rolled, tokenId);
-          setGame(moved);
+          setLocalGame(moved);
           if (soundOn) await playSound(moved.lastCapture ? 'capture' : 'move');
           if (moved.winner) {
-            setWinner(moved.winner);
             if (soundOn) playSound('win');
             setMessage('Bot wins the match.');
           } else {
@@ -159,12 +183,30 @@ export default function GameScreen() {
 
   const rollDice = async () => {
     if (rolling || winner || game.phase !== 'rolling') return;
+    if (roomCode) {
+      if (!onlineRoom || !isOnlineTurn) return;
+      setRolling(true);
+      const requestId = makeOnlineActionId();
+      pendingActionId.current = requestId;
+      try {
+        const result = await rollOnlineDie(roomCode, requestId, onlineRoom.stateVersion ?? 0);
+        setDice(result.die);
+        setMessage(result.hasMove ? `${currentPlayer.name} rolled ${result.die}. Choose a token.` : `${currentPlayer.name} rolled ${result.die} and has no legal move.`);
+        animateDiceRoll();
+        if (soundOn) await playSound('roll');
+      } catch (error) {
+        if (pendingActionId.current === requestId) pendingActionId.current = null;
+        setRolling(false);
+        setMessage(error instanceof Error ? error.message : 'Could not roll the online die.');
+      }
+      return;
+    }
     const nextGame = rollForCurrentPlayer(game);
     const nextRoll = nextGame.dice!;
     setRolling(true);
     setDice(nextRoll);
     setMessage(`${PLAYER_META[currentPlayer.id].name} rolled ${nextRoll}.`);
-    setGame(nextGame);
+    setLocalGame(nextGame);
 
     animateDiceRoll();
 
@@ -185,14 +227,28 @@ export default function GameScreen() {
   };
 
   const selectToken = async (token: Token) => {
-    if (rolling || game.phase !== 'moving' || !getLegalTokens(currentPlayer, game.dice!).some((legal) => legal.id === token.id)) return;
+    if (rolling || !isOnlineTurn || game.phase !== 'moving' || !getLegalTokens(currentPlayer, game.dice!).some((legal) => legal.id === token.id)) return;
+    if (roomCode) {
+      setRolling(true);
+      const requestId = makeOnlineActionId();
+      pendingActionId.current = requestId;
+      try {
+        const result = await moveOnlineToken(roomCode, token.id, requestId, onlineRoom?.stateVersion ?? 0);
+        if (soundOn) await playSound(result.captured ? 'capture' : 'move');
+        setMessage(result.winner ? `${PLAYER_META[result.winner as keyof typeof PLAYER_META].name} wins!` : result.captured ? 'Token captured. The shared board is updated.' : 'Move accepted. The shared board is updated.');
+      } catch (error) {
+        if (pendingActionId.current === requestId) pendingActionId.current = null;
+        setRolling(false);
+        setMessage(error instanceof Error ? error.message : 'Could not move that token.');
+      }
+      return;
+    }
     const nextGame = moveToken(game, token.id);
-    setGame(nextGame);
+    setLocalGame(nextGame);
     setRolling(true);
     if (soundOn) await playSound(nextGame.lastCapture ? 'capture' : 'move');
     setTimeout(() => {
       if (nextGame.winner) {
-        setWinner(nextGame.winner);
         if (soundOn) playSound('win');
         setMessage(`${PLAYER_META[nextGame.winner].name} wins!`);
       } else {
@@ -210,11 +266,23 @@ export default function GameScreen() {
     outputRange: ['0deg', '360deg'],
   });
 
+  if (roomCode && (!onlineRoom || !onlineRoom.gameState)) {
+    return (
+      <LinearGradient colors={['#0F172A', '#10152A', '#1A254A']} style={styles.background}>
+        <View style={styles.loadingContainer}>
+          {onlineError ? <Text style={styles.message}>{onlineError}</Text> : <ActivityIndicator color="#FFD700" size="large" />}
+          {!onlineError ? <Text style={styles.message}>{onlineRoom?.status === 'waiting' ? 'Waiting for the host to start this room.' : 'Connecting to the room…'}</Text> : null}
+          <Pressable onPress={() => router.replace({ pathname: '/room', params: { roomCode } })}><Text style={styles.exitText}>Back to room</Text></Pressable>
+        </View>
+      </LinearGradient>
+    );
+  }
+
   return (
     <LinearGradient colors={['#0F172A', '#10152A', '#1A254A']} style={styles.background}>
       <View style={styles.container}>
         <View style={styles.headerRow}>
-          <Pressable onPress={() => router.replace('/home')}>
+          <Pressable onPress={() => roomCode ? router.replace({ pathname: '/room', params: { roomCode } }) : router.replace('/home')}>
             <Text style={styles.exitText}>Exit</Text>
           </Pressable>
           <Text style={styles.statusText}>Turn {game.turnIndex + 1} of {game.players.length}</Text>
@@ -226,7 +294,7 @@ export default function GameScreen() {
         <View style={styles.playerBar}>
           {game.players.map((player) => (
             <View key={player.id} style={[styles.playerPill, { backgroundColor: `${PLAYER_META[player.id].accent}22` }]}> 
-              <Text style={[styles.playerColor, { color: PLAYER_META[player.id].accent }]}>{selectedMode === 'Play Against Computer' && player.id === 'green' ? 'Bot' : PLAYER_META[player.id].name}</Text>
+              <Text style={[styles.playerColor, { color: PLAYER_META[player.id].accent }]}>{isBotTurn && player.id === 'green' ? 'Bot' : roomCode ? player.name : PLAYER_META[player.id].name}</Text>
             </View>
           ))}
         </View>
@@ -246,7 +314,7 @@ export default function GameScreen() {
 
             {allTokens.map((token) => (
               <TokenChip key={token.id} token={token} color={PLAYER_META[token.color].accent} boardSize={boardSize} reducedMotion={reducedMotion}
-                selectable={!isBotTurn && game.phase === 'moving' && getLegalTokens(currentPlayer, game.dice!).some((legal) => legal.id === token.id)}
+                selectable={!isBotTurn && isOnlineTurn && game.phase === 'moving' && getLegalTokens(currentPlayer, game.dice!).some((legal) => legal.id === token.id)}
                 onPress={() => selectToken(token)}
               />
             ))}
@@ -259,15 +327,15 @@ export default function GameScreen() {
             <Animated.View style={[styles.dice, { transform: [{ rotate: reducedMotion ? '0deg' : boardRotation }] }]}>
               <Text style={styles.diceValue}>{dice}</Text>
             </Animated.View>
-            <Pressable style={[styles.rollButton, (game.phase !== 'rolling' || isBotTurn) && styles.disabledButton]} onPress={rollDice} disabled={rolling || game.phase !== 'rolling' || isBotTurn}>
-              <Text style={styles.rollButtonText}>{rolling || isBotTurn ? 'Please wait...' : game.phase === 'moving' ? 'Choose a token' : 'Roll Dice'}</Text>
+            <Pressable style={[styles.rollButton, (game.phase !== 'rolling' || isBotTurn || !isOnlineTurn) && styles.disabledButton]} onPress={rollDice} disabled={rolling || game.phase !== 'rolling' || isBotTurn || !isOnlineTurn}>
+              <Text style={styles.rollButtonText}>{rolling || isBotTurn ? 'Please wait...' : !isOnlineTurn ? 'Waiting for turn' : game.phase === 'moving' ? 'Choose a token' : 'Roll Dice'}</Text>
             </Pressable>
           </View>
 
           <View style={styles.infoPanel}>
             <Text style={styles.label}>Now playing</Text>
-            <Text style={styles.playerName}>{isBotTurn ? `Bot · ${botDifficulty}` : PLAYER_META[currentPlayer.id].name}</Text>
-            <Text style={styles.message}>{message}</Text>
+            <Text style={styles.playerName}>{isBotTurn ? `Bot · ${botDifficulty}` : roomCode ? currentPlayer.name : PLAYER_META[currentPlayer.id].name}</Text>
+            <Text style={styles.message}>{winner ? `${game.players.find((player) => player.id === winner)?.name ?? PLAYER_META[winner].name} wins!` : message}</Text>
           </View>
         </View>
       </View>
@@ -278,6 +346,7 @@ export default function GameScreen() {
 const styles = StyleSheet.create({
   background: { flex: 1 },
   container: { flex: 1, paddingHorizontal: 18, paddingTop: 48, paddingBottom: 18 },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 28, gap: 18 },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',

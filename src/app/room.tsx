@@ -110,7 +110,10 @@ export default function RoomScreen() {
             {room.status === 'playing' ? (
               <View style={styles.notice}>
                 <Text style={styles.noticeTitle}>Room started</Text>
-                <Text style={styles.noticeText}>Online turn synchronization is the next multiplayer milestone. Keep this room open while that is being connected.</Text>
+                <Text style={styles.noticeText}>The online game is ready. Everyone in the room can open the shared board.</Text>
+                <TouchableOpacity style={styles.openGameButton} onPress={() => router.push({ pathname: '/game', params: { roomCode: room.roomCode } })}>
+                  <Text style={styles.openGameText}>Open Online Game</Text>
+                </TouchableOpacity>
               </View>
             ) : (
               <>
@@ -160,6 +163,8 @@ const styles = StyleSheet.create({
   notice: { backgroundColor: 'rgba(255,215,0,0.1)', borderColor: 'rgba(255,215,0,0.4)', borderWidth: 1, padding: 16, borderRadius: 16 },
   noticeTitle: { color: '#FFD700', fontWeight: '800', marginBottom: 6 },
   noticeText: { color: '#D7E3FF', lineHeight: 20 },
+  openGameButton: { alignSelf: 'flex-start', backgroundColor: '#FFD700', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 11, marginTop: 14 },
+  openGameText: { color: '#10152A', fontWeight: '800' },
   error: { color: '#FF9B9B', marginTop: 16, lineHeight: 20 },
   backButton: { alignSelf: 'center', padding: 16, marginTop: 14 },
   backText: { color: '#B9C9FF', fontWeight: '700' },

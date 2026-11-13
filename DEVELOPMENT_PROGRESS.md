@@ -50,20 +50,22 @@ Pending in this sprint:
 - Added callable Cloud Functions for private-room creation, joining, readiness, and host-only start; seat assignment and state transitions run in Firestore transactions.
 - Connected the create/join lobby screens to the room callables and a member-only live room listener; removed the local fake-room store.
 - Restricted client room reads to room members and denied all direct room writes.
-- Starting a room now marks it as playing; the UI explains that synchronized turns are a later milestone.
+- Added server-authoritative online game initialization, cryptographic dice, legal token moves, active-player checks, idempotent action receipts, and stale-state version checks.
+- Reused the local TypeScript game engine in Cloud Functions so online and offline rules stay aligned.
+- Connected the board to live room game state and routed online rolls and moves through callable functions.
 
 Pending in this sprint:
 
 - Add local Firebase project values and enable the selected Auth providers.
 - Validate account flows and profile creation against the configured Firebase project.
 - Configure Firebase Functions, deploy functions/rules, and verify private-room lifecycle with multiple authenticated devices.
-- Add Cloud Functions for authoritative dice, moves, matchmaking, and reconnect state.
-- Add Cloud Functions for authoritative dice, moves, matchmaking, and reconnect state.
+- Implement matchmaking and reconnect/abandoned-turn handling.
+- Persist completed online match results and validate online play across multiple devices.
 - Test Firestore rules with the Firebase Emulator before deployment.
 
 ### Sprint 5 — Security and social features
 
-- Pending: validate Firestore rules, add Cloud Functions for authoritative dice and moves, and implement invitations, reactions, and rewards.
+- Pending: validate Firestore rules and online transactions in the Firebase Emulator, then add matchmaking, reconnect handling, invitations, reactions, and rewards.
 
 ### Sprint 6 — Release preparation
 
@@ -75,5 +77,8 @@ Pending in this sprint:
 - `npm run lint` — passed.
 - Android JavaScript bundle export — passed.
 - Local engine and bot tests via Node's built-in test runner — 12 passed, including four deterministic full-match simulations.
+- Cloud Functions TypeScript build — passed.
+- Private-room helper tests — 2 passed.
+- Android JavaScript bundle export after private-room integration — passed.
 
-Firebase Auth and private-room callables could not be exercised against a live project because project configuration has not been provided. Cloud Functions have not been deployed. SQLite-backed history still needs a native device run.
+Firebase Auth and online room actions could not be exercised against a live project because project configuration has not been provided. Cloud Functions have not been deployed or emulator-tested. SQLite-backed history still needs a native device run.
