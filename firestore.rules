@@ -31,6 +31,16 @@ service cloud.firestore {
       allow list, create, update, delete: if false;
     }
 
+    match /matches/{matchId} {
+      allow get: if request.auth != null && request.auth.uid in resource.data.playerUids;
+      allow list, create, update, delete: if false;
+    }
+
+    match /quickMatchTickets/{userId} {
+      allow get: if signedInAs(userId);
+      allow list, create, update, delete: if false;
+    }
+
     // Match state, dice rolls, rewards, and all unspecified collections are server-owned.
     match /{document=**} {
       allow read, write: if false;

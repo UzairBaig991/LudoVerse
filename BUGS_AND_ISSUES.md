@@ -5,7 +5,7 @@
 - Firebase project values are not configured. Email and guest auth are wired but cannot reach Firebase until the developer supplies local `.env` values and enables those providers.
 - Google sign-in is not implemented; its UI is marked as pending setup.
 - Firestore rules and room functions have not yet been deployed or emulator-tested.
-- Private-room and server-authoritative turn logic is implemented, but has not been exercised against live Firebase or multiple devices. Online matchmaking and reconnect/abandoned-turn handling remain unimplemented.
+- Private-room, server-authoritative turn, result-recording, and same-seat reconnect logic is implemented, but has not been exercised against live Firebase or multiple devices. Matchmaking and automatic abandoned-turn handling remain unimplemented.
 - The game board now scales to the app window; its layout still needs validation on small and large Android screens.
 - Player profile totals and leaderboard data still come from sample store values; they are not calculated from local history.
 - SQLite match history and AsyncStorage settings have passed type checks but have not been exercised on a physical device or development build.
@@ -18,5 +18,5 @@
 - Expo lint: passed.
 - Android bundle export: passed.
 - Engine and bot rules: 12 tests passed using Node's built-in test runner, including full-match simulations.
-- Functions TypeScript build passed; 2 private-room helper tests passed.
-- Online match engine: 3 tests passed; Firestore transaction integration remains untested without the Firebase Emulator.
+- Functions TypeScript build passed; 3 room lifecycle/reconnect helper tests and 4 online match engine/result tests passed.
+- Firestore transaction integration and security rules remain untested without the Firebase Emulator.

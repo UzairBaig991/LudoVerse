@@ -59,8 +59,8 @@ Pending in this sprint:
 - Add local Firebase project values and enable the selected Auth providers.
 - Validate account flows and profile creation against the configured Firebase project.
 - Configure Firebase Functions, deploy functions/rules, and verify private-room lifecycle with multiple authenticated devices.
-- Implement matchmaking and reconnect/abandoned-turn handling.
-- Persist completed online match results and validate online play across multiple devices.
+- Implement matchmaking and abandoned-turn timeout rules; existing room members can resume their saved seat and game state by re-entering the room code.
+- Validate completed-match records and gameplay across multiple authenticated devices.
 - Test Firestore rules with the Firebase Emulator before deployment.
 
 ### Sprint 5 — Security and social features
@@ -82,3 +82,5 @@ Pending in this sprint:
 - Android JavaScript bundle export after private-room integration — passed.
 
 Firebase Auth and online room actions could not be exercised against a live project because project configuration has not been provided. Cloud Functions have not been deployed or emulator-tested. SQLite-backed history still needs a native device run.
+
+Online completion and reconnect helper tests are included in the Functions test suite.

@@ -115,6 +115,22 @@ export default function RoomScreen() {
                   <Text style={styles.openGameText}>Open Online Game</Text>
                 </TouchableOpacity>
               </View>
+            ) : room.status === 'completed' ? (
+              <View style={styles.notice}>
+                <Text style={styles.noticeTitle}>Match complete</Text>
+                <Text style={styles.noticeText}>{room.gameState?.players.find((player) => player.id === room.gameState?.winner)?.name ?? 'The winner'} won this match.</Text>
+                <TouchableOpacity style={styles.openGameButton} onPress={() => router.push({ pathname: '/results', params: {
+                  winner: room.gameState?.winner ?? 'red',
+                  winnerName: room.gameState?.players.find((player) => player.id === room.gameState?.winner)?.name ?? 'Player',
+                  online: '1',
+                  roomCode: room.roomCode,
+                } })}>
+                  <Text style={styles.openGameText}>View Match Result</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.completedBoardButton} onPress={() => router.push({ pathname: '/game', params: { roomCode: room.roomCode, finalBoard: '1' } })}>
+                  <Text style={styles.secondaryButtonText}>View Final Board</Text>
+                </TouchableOpacity>
+              </View>
             ) : (
               <>
                 <TouchableOpacity style={[styles.secondaryButton, (busy || !currentPlayer) && styles.disabled]} onPress={() => void toggleReady()} disabled={busy || !currentPlayer}>
@@ -165,6 +181,7 @@ const styles = StyleSheet.create({
   noticeText: { color: '#D7E3FF', lineHeight: 20 },
   openGameButton: { alignSelf: 'flex-start', backgroundColor: '#FFD700', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 11, marginTop: 14 },
   openGameText: { color: '#10152A', fontWeight: '800' },
+  completedBoardButton: { alignSelf: 'flex-start', marginTop: 12, paddingVertical: 8 },
   error: { color: '#FF9B9B', marginTop: 16, lineHeight: 20 },
   backButton: { alignSelf: 'center', padding: 16, marginTop: 14 },
   backText: { color: '#B9C9FF', fontWeight: '700' },

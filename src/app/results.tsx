@@ -5,30 +5,35 @@ import { PLAYER_META, ColorKey } from '../lib/ludo';
 import { useGameStore } from '../store/gameStore';
 
 export default function ResultsScreen() {
-  const params = useLocalSearchParams<{ winner?: string }>();
+  const params = useLocalSearchParams<{ winner?: string; winnerName?: string; online?: string; roomCode?: string }>();
   const selectedMode = useGameStore((state) => state.selectedMode);
   const winner = (params.winner ?? 'red') as ColorKey;
-  const winnerName = PLAYER_META[winner]?.name ?? 'Player';
+  const isOnlineResult = params.online === '1';
+  const winnerName = isOnlineResult ? params.winnerName ?? 'Player' : PLAYER_META[winner]?.name ?? 'Player';
 
   return (
     <LinearGradient colors={['#10152A', '#151B35', '#1A254A']} style={styles.background}>
       <View style={styles.container}>
-        <Text style={styles.eyebrow}>Local match complete</Text>
+        <Text style={styles.eyebrow}>{isOnlineResult ? 'Online match complete' : 'Local match complete'}</Text>
         <Text style={styles.title}>{winnerName} wins</Text>
 
         <View style={styles.card}>
           <Text style={styles.label}>Match mode</Text>
-          <Text style={styles.value}>{selectedMode}</Text>
+          <Text style={styles.value}>{isOnlineResult ? 'Private Room' : selectedMode}</Text>
           <Text style={styles.label}>Tokens finished</Text>
           <Text style={styles.value}>4 / 4</Text>
         </View>
 
-        <TouchableOpacity style={styles.primaryButton} onPress={() => router.replace('/game')}>
-          <Text style={styles.primaryButtonText}>Play Again</Text>
+        <TouchableOpacity style={styles.primaryButton} onPress={() => isOnlineResult && params.roomCode
+          ? router.replace({ pathname: '/game', params: { roomCode: params.roomCode, finalBoard: '1' } })
+          : router.replace('/game')}>
+          <Text style={styles.primaryButtonText}>{isOnlineResult ? 'View Final Board' : 'Play Again'}</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.secondaryButton} onPress={() => router.replace('/home')}>
-          <Text style={styles.secondaryButtonText}>Return Home</Text>
+        <TouchableOpacity style={styles.secondaryButton} onPress={() => isOnlineResult && params.roomCode
+          ? router.replace({ pathname: '/room', params: { roomCode: params.roomCode } })
+          : router.replace('/home')}>
+          <Text style={styles.secondaryButtonText}>{isOnlineResult ? 'Return to Room' : 'Return Home'}</Text>
         </TouchableOpacity>
       </View>
     </LinearGradient>

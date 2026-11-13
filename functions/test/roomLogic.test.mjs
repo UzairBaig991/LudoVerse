@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { CODE_ALPHABET, findOpenSeat, isValidRoomCode, makeRoomCode } from '../lib/functions/src/roomLogic.js';
+import { canResumeRoom, CODE_ALPHABET, findOpenSeat, isValidRoomCode, makeRoomCode } from '../lib/functions/src/roomLogic.js';
 
 test('room code alphabet excludes ambiguous characters and has enough symbols', () => {
   assert.equal(CODE_ALPHABET.length, 32);
@@ -19,4 +19,12 @@ test('room seats stay within the configured capacity', () => {
     assert.equal(findOpenSeat(players, capacity), undefined);
   }
   assert.equal(findOpenSeat([{ seat: 0 }, { seat: 2 }], 4), 1);
+});
+
+test('existing room members can resume active and completed rooms but not expired lobbies', () => {
+  assert.equal(canResumeRoom('playing', 'a', ['a', 'b'], 0, 100), true);
+  assert.equal(canResumeRoom('completed', 'a', ['a', 'b'], 0, 100), true);
+  assert.equal(canResumeRoom('waiting', 'a', ['a', 'b'], 200, 100), true);
+  assert.equal(canResumeRoom('waiting', 'a', ['a', 'b'], 100, 100), false);
+  assert.equal(canResumeRoom('playing', 'outsider', ['a', 'b'], 1000, 100), false);
 });

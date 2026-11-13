@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { applyOnlineMove, applyOnlineRoll, getOnlineTurnUid, initializeOnlineGame } from '../lib/functions/src/onlineMatch.js';
+import { GOAL_PROGRESS } from '../lib/src/lib/ludo.js';
+import { applyOnlineMove, applyOnlineRoll, buildOnlineMatchRecord, getOnlineTurnUid, initializeOnlineGame } from '../lib/functions/src/onlineMatch.js';
 
 const seats = [
   { uid: 'host-uid', displayName: 'Host', seat: 0 },
@@ -29,4 +30,23 @@ test('server applies the requested die through the shared legal-move rules', () 
 
 test('online seats must be contiguous and valid before a match can start', () => {
   assert.throws(() => initializeOnlineGame([{ uid: 'a', displayName: 'A', seat: 1 }, { uid: 'b', displayName: 'B', seat: 2 }]), /contiguous/);
+});
+
+test('completed match record awards the winning color to the matching room member', () => {
+  const game = initializeOnlineGame(seats);
+  const finishedGame = {
+    ...game,
+    phase: 'complete',
+    winner: 'green',
+    players: game.players.map((player) => player.id === 'green' ? {
+      ...player,
+      tokens: player.tokens.map((token) => ({ ...token, state: 'finish', progress: GOAL_PROGRESS })),
+    } : player),
+  };
+  const result = buildOnlineMatchRecord('ABCD2345', 'host-uid', seats, finishedGame);
+  assert.equal(result.winnerUid, 'guest-uid');
+  assert.equal(result.winnerColor, 'green');
+  assert.deepEqual(result.playerUids, ['host-uid', 'guest-uid']);
+  assert.equal(result.status, 'completed');
+  assert.throws(() => buildOnlineMatchRecord('ABCD2345', 'host-uid', seats, initializeOnlineGame(seats)), /winner/);
 });

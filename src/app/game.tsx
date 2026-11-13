@@ -61,7 +61,7 @@ function TokenChip({ token, color, boardSize, reducedMotion, selectable, onPress
 }
 
 export default function GameScreen() {
-  const params = useLocalSearchParams<{ roomCode?: string | string[] }>();
+  const params = useLocalSearchParams<{ roomCode?: string | string[]; finalBoard?: string }>();
   const roomCode = Array.isArray(params.roomCode) ? params.roomCode[0] : params.roomCode;
   const [onlineRoom, setOnlineRoom] = useState<PrivateRoom | null>(null);
   const [onlineError, setOnlineError] = useState('');
@@ -83,6 +83,7 @@ export default function GameScreen() {
   const [diceSpin] = useState(() => new Animated.Value(0));
   const botProcessing = useRef(false);
   const matchRecorded = useRef(false);
+  const onlineResultOpened = useRef(false);
 
   const currentPlayer = game.players[game.turnIndex]!;
   const isOnlineTurn = !roomCode || onlineRoom?.players.find((player) => player.seat === game.turnIndex)?.uid === firebaseAuth?.currentUser?.uid;
@@ -142,6 +143,13 @@ export default function GameScreen() {
       router.replace({ pathname: '/results', params: { winner } });
     });
   }, [game.players.length, roomCode, selectedMode, winner]);
+
+  useEffect(() => {
+    if (!roomCode || params.finalBoard === '1' || onlineRoom?.status !== 'completed' || !winner || onlineResultOpened.current) return;
+    onlineResultOpened.current = true;
+    const winnerName = game.players.find((player) => player.id === winner)?.name ?? PLAYER_META[winner].name;
+    router.replace({ pathname: '/results', params: { winner, winnerName, online: '1', roomCode } });
+  }, [game.players, onlineRoom?.status, params.finalBoard, roomCode, winner]);
 
   const allTokens = useMemo(() => game.players.flatMap((player) => player.tokens), [game.players]);
 
@@ -325,7 +333,7 @@ export default function GameScreen() {
           <View style={styles.dicePanel}>
             <Text style={styles.label}>Dice</Text>
             <Animated.View style={[styles.dice, { transform: [{ rotate: reducedMotion ? '0deg' : boardRotation }] }]}>
-              <Text style={styles.diceValue}>{dice}</Text>
+              <Text style={styles.diceValue}>{game.dice ?? dice}</Text>
             </Animated.View>
             <Pressable style={[styles.rollButton, (game.phase !== 'rolling' || isBotTurn || !isOnlineTurn) && styles.disabledButton]} onPress={rollDice} disabled={rolling || game.phase !== 'rolling' || isBotTurn || !isOnlineTurn}>
               <Text style={styles.rollButtonText}>{rolling || isBotTurn ? 'Please wait...' : !isOnlineTurn ? 'Waiting for turn' : game.phase === 'moving' ? 'Choose a token' : 'Roll Dice'}</Text>
@@ -335,7 +343,7 @@ export default function GameScreen() {
           <View style={styles.infoPanel}>
             <Text style={styles.label}>Now playing</Text>
             <Text style={styles.playerName}>{isBotTurn ? `Bot · ${botDifficulty}` : roomCode ? currentPlayer.name : PLAYER_META[currentPlayer.id].name}</Text>
-            <Text style={styles.message}>{winner ? `${game.players.find((player) => player.id === winner)?.name ?? PLAYER_META[winner].name} wins!` : message}</Text>
+            <Text style={styles.message}>{onlineError || (winner ? `${game.players.find((player) => player.id === winner)?.name ?? PLAYER_META[winner].name} wins!` : message)}</Text>
           </View>
         </View>
       </View>
