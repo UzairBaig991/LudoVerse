@@ -4,7 +4,7 @@ Updated: 2026-11-13
 
 ## Current stage
 
-Sprint 3 — Offline gameplay and visual polish (in progress)
+Sprint 4 — Firebase and online multiplayer (in progress)
 
 ## Sprint status
 
@@ -12,7 +12,7 @@ Sprint 3 — Offline gameplay and visual polish (in progress)
 
 - Expo Router routes and the initial home, onboarding, authentication, mode selection, profile, lobby, and results screens exist.
 - A shared dark theme and initial game screen are in place.
-- Authentication and online/lobby screens are UI scaffolding; they are not connected to a backend.
+- The auth screen started as UI scaffolding; email and anonymous Firebase Auth wiring is now tracked under Sprint 4.
 
 ### Sprint 2 — Board and game engine
 
@@ -42,11 +42,23 @@ Pending in this sprint:
 
 ### Sprint 4 — Firebase and online multiplayer
 
-- Pending: Firebase setup, authenticated accounts, private rooms, matchmaking, synchronization, and reconnect handling.
+- Added the Firebase JS SDK using the SDK-compatible Expo installer.
+- Added env-based Firebase app initialization and persistent React Native Auth setup.
+- Connected email registration, email sign-in, password reset, and anonymous guest sign-in to Firebase Auth.
+- Kept local play available without Firebase configuration and disabled the unfinished Google flow.
+- Added restrictive Firestore rules and documented the planned data structure.
+
+Pending in this sprint:
+
+- Add local Firebase project values and enable the selected Auth providers.
+- Validate account flows and profile creation against the configured Firebase project.
+- Implement private room creation and joining with server-owned seat allocation.
+- Add Cloud Functions for authoritative dice, moves, matchmaking, and reconnect state.
+- Test Firestore rules with the Firebase Emulator before deployment.
 
 ### Sprint 5 — Security and social features
 
-- Pending: server-authoritative dice and moves, Firestore rules, Cloud Functions, invitations, reactions, and rewards.
+- Pending: validate Firestore rules, add Cloud Functions for authoritative dice and moves, and implement invitations, reactions, and rewards.
 
 ### Sprint 6 — Release preparation
 
@@ -55,7 +67,8 @@ Pending in this sprint:
 ## Checks run
 
 - `tsc --noEmit` — passed.
-- ESLint via `node node_modules/eslint/bin/eslint.js .` — passed.
+- `npm run lint` — passed.
+- Android JavaScript bundle export — passed.
 - Local engine and bot tests via Node's built-in test runner — 12 passed, including four deterministic full-match simulations.
 
-The SQLite-backed history still needs a native device run; TypeScript checks do not verify native database behavior.
+Firebase Auth could not be exercised against a live project because project configuration has not been provided. SQLite-backed history still needs a native device run.
