@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { chooseBotMove } from './bot.ts';
-import { PLAYER_META, createGameState } from './ludo.ts';
+import { PLAYER_META, createGameState, moveToken, rollForCurrentPlayer } from './ludo.ts';
 
 test('bot only chooses a legal move', () => {
   const initial = createGameState(2);
@@ -31,4 +31,32 @@ test('hard bot prioritizes a safe capture when one is available', () => {
     ],
   };
   assert.equal(chooseBotMove(state, 'Hard'), 'green-1');
+});
+
+test('two medium bots complete deterministic local matches without illegal or stuck turns', () => {
+  for (let seed = 1; seed <= 4; seed += 1) {
+    let randomState = seed;
+    const random = () => {
+      randomState = (Math.imul(randomState, 1664525) + 1013904223) >>> 0;
+      return randomState / 0x1_0000_0000;
+    };
+    let state = createGameState(2);
+    let moves = 0;
+
+    while (!state.winner && moves < 20_000) {
+      if (state.phase === 'rolling') {
+        state = rollForCurrentPlayer(state, random);
+      } else {
+        const tokenId = chooseBotMove(state, 'Medium', random);
+        assert.ok(tokenId, `seed ${seed} had a moving phase without a legal token`);
+        const next = moveToken(state, tokenId);
+        assert.notEqual(next, state, `seed ${seed} attempted an illegal move`);
+        state = next;
+      }
+      moves += 1;
+    }
+
+    assert.ok(state.winner, `seed ${seed} did not finish within ${moves} game steps`);
+    assert.ok(moves < 20_000);
+  }
 });

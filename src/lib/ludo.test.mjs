@@ -51,6 +51,17 @@ test('the board loop has 52 unique cells and finishing requires the exact number
   assert.equal(hasPlayerWon({ id: 'red', name: 'Red', tokens: Array.from({ length: 4 }, (_, index) => ({ ...finished, id: `red-${index + 1}`, index })) }), true);
 });
 
+test('tokens continue moving through the six home-lane cells before finishing', () => {
+  const laneToken = { id: 'red-1', color: 'red', index: 0, state: 'track', progress: 52 };
+  const nextCell = advanceToken(laneToken, 4);
+  assert.equal(nextCell.state, 'track');
+  assert.equal(nextCell.progress, 56);
+  assert.equal(canTokenMove(nextCell, 2), false);
+  const goal = advanceToken(nextCell, 1);
+  assert.equal(goal.state, 'finish');
+  assert.equal(goal.progress, GOAL_PROGRESS);
+});
+
 test('a token on a safe square cannot be captured', () => {
   const safe = [...SAFE_SQUARES][1];
   const redProgress = (safe - PLAYER_META.red.entry + 52) % 52;

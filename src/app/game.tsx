@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { playSound } from '../lib/audio';
 import { chooseBotMove } from '../lib/bot';
@@ -92,7 +92,7 @@ export default function GameScreen() {
     };
   }, []);
 
-  const animateDiceRoll = () => {
+  const animateDiceRoll = useCallback(() => {
     if (reducedMotion) {
       diceSpin.setValue(0);
       return;
@@ -101,7 +101,7 @@ export default function GameScreen() {
       Animated.timing(diceSpin, { toValue: 1, duration: 180, useNativeDriver: true }),
       Animated.timing(diceSpin, { toValue: 0, duration: 180, useNativeDriver: true }),
     ]).start();
-  };
+  }, [diceSpin, reducedMotion]);
 
   useEffect(() => {
     if (!winner || matchRecorded.current) return;
@@ -138,7 +138,7 @@ export default function GameScreen() {
           await new Promise((resolve) => setTimeout(resolve, 520));
           const moved = moveToken(rolled, tokenId);
           setGame(moved);
-          if (soundOn) await playSound('move');
+          if (soundOn) await playSound(moved.lastCapture ? 'capture' : 'move');
           if (moved.winner) {
             setWinner(moved.winner);
             if (soundOn) playSound('win');
@@ -155,7 +155,7 @@ export default function GameScreen() {
       setBotCycle((cycle) => cycle + 1);
     }, 650);
     return () => clearTimeout(timer);
-  }, [botCycle, botDifficulty, game, isBotTurn, soundOn, winner]);
+  }, [animateDiceRoll, botCycle, botDifficulty, game, isBotTurn, soundOn, winner]);
 
   const rollDice = async () => {
     if (rolling || winner || game.phase !== 'rolling') return;
@@ -189,7 +189,7 @@ export default function GameScreen() {
     const nextGame = moveToken(game, token.id);
     setGame(nextGame);
     setRolling(true);
-    if (soundOn) await playSound('move');
+    if (soundOn) await playSound(nextGame.lastCapture ? 'capture' : 'move');
     setTimeout(() => {
       if (nextGame.winner) {
         setWinner(nextGame.winner);

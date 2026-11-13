@@ -1,10 +1,11 @@
 import { Audio } from 'expo-av';
 
-export type SoundKey = 'roll' | 'move' | 'win';
+export type SoundKey = 'roll' | 'move' | 'capture' | 'win';
 
 const soundMap: Record<SoundKey, number> = {
   roll: require('../../assets/sounds/dice-roll.wav'),
   move: require('../../assets/sounds/token-move.wav'),
+  capture: require('../../assets/sounds/token-capture.wav'),
   win: require('../../assets/sounds/victory.wav'),
 };
 

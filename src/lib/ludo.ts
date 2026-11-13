@@ -80,10 +80,13 @@ export const createGameState = (playerCount = 4): GameState => ({
 export const getTokenDisplayPosition = (token: Token) => {
   if (token.state === 'home') return PLAYER_META[token.color].home[token.index]!;
   if (token.state === 'track') {
+    if (token.progress >= TRACK_LENGTH) {
+      return FINISH_PATH[token.color][Math.min(token.progress - TRACK_LENGTH, HOME_STRETCH_LENGTH - 1)]!;
+    }
     const trackIndex = (PLAYER_META[token.color].entry + token.progress) % TRACK_LENGTH;
     return TRACK[trackIndex]!;
   }
-  return FINISH_PATH[token.color][Math.min(token.progress - TRACK_LENGTH, HOME_STRETCH_LENGTH - 1)]!;
+  return FINISH_PATH[token.color][HOME_STRETCH_LENGTH - 1]!;
 };
 
 export const getLegalTokens = (player: PlayerState, roll: number): Token[] =>
@@ -99,7 +102,7 @@ export const advanceToken = (token: Token, roll: number): Token => {
   if (!canTokenMove(token, roll)) return token;
   if (token.state === 'home') return { ...token, state: 'track', progress: 0 };
   const progress = token.progress + roll;
-  return progress >= TRACK_LENGTH ? { ...token, state: 'finish', progress } : { ...token, progress };
+  return progress >= GOAL_PROGRESS ? { ...token, state: 'finish', progress: GOAL_PROGRESS } : { ...token, progress };
 };
 
 export const hasPlayerWon = (player: PlayerState) => player.tokens.every((token) => token.state === 'finish' && token.progress === GOAL_PROGRESS);
@@ -122,7 +125,7 @@ export const moveToken = (state: GameState, tokenId: string, rules: GameRules = 
   if (!token || !canTokenMove(token, state.dice)) return state;
 
   const movedToken = advanceToken(token, state.dice);
-  const destination = movedToken.state === 'track'
+  const destination = movedToken.state === 'track' && movedToken.progress < TRACK_LENGTH
     ? (PLAYER_META[player.id].entry + movedToken.progress) % TRACK_LENGTH
     : null;
   let captured: string | null = null;
@@ -130,7 +133,7 @@ export const moveToken = (state: GameState, tokenId: string, rules: GameRules = 
     ...current,
     tokens: current.tokens.map((candidate) => {
       if (current.id === player.id && candidate.id === token.id) return movedToken;
-      if (destination === null || current.id === player.id || candidate.state !== 'track') return candidate;
+      if (destination === null || current.id === player.id || candidate.state !== 'track' || candidate.progress >= TRACK_LENGTH) return candidate;
       const opponentSquare = (PLAYER_META[candidate.color].entry + candidate.progress) % TRACK_LENGTH;
       if (opponentSquare !== destination || SAFE_SQUARES.has(destination)) return candidate;
       captured = candidate.id;

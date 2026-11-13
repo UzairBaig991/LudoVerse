@@ -29,13 +29,16 @@ Sprint 3 — Offline gameplay and visual polish (in progress)
 - Added SQLite local match records and a match-history screen linked from the profile.
 - Removed the fixed coin reward from the local results screen.
 - Existing token and dice animations and sound effects are used during local play.
+- Made the board and token sizing respond to the app window dimensions.
+- Added reduced-motion support for token movement and dice rotation.
+- Added a distinct capture sound for human and bot captures.
+- Simulated four deterministic bot-versus-bot matches and fixed home-lane progress so tokens continue to goal.
 
 Pending in this sprint:
 
 - Validate SQLite persistence and gameplay on Android and iOS devices.
-- Improve board responsiveness and visual layout across device sizes.
-- Tune bot strategy and test longer complete matches.
-- Add capture-specific audio and reduced-motion handling.
+- Review board visual layout across device sizes on physical devices.
+- Balance the bot through human playthroughs and listen to the new capture sound on device.
 
 ### Sprint 4 — Firebase and online multiplayer
 
@@ -53,6 +56,6 @@ Pending in this sprint:
 
 - `tsc --noEmit` — passed.
 - ESLint via `node node_modules/eslint/bin/eslint.js .` — passed.
-- Local engine and bot tests via Node's built-in test runner — 10 passed.
+- Local engine and bot tests via Node's built-in test runner — 12 passed, including four deterministic full-match simulations.
 
 The SQLite-backed history still needs a native device run; TypeScript checks do not verify native database behavior.

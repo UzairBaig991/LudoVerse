@@ -18,7 +18,7 @@ const scoreMove = (state: GameState, tokenId: string, difficulty: Exclude<BotDif
   if (movedToken.state === 'finish') score += difficulty === 'Hard' ? 500 : 300;
   if (next.lastCapture) score += difficulty === 'Hard' ? 220 : 140;
 
-  if (movedToken.state === 'track') {
+  if (movedToken.state === 'track' && movedToken.progress < TRACK_LENGTH) {
     const square = getTrackSquare(movedToken.color, movedToken.progress);
     if (SAFE_SQUARES.has(square)) score += difficulty === 'Hard' ? 100 : 65;
 
@@ -26,7 +26,7 @@ const scoreMove = (state: GameState, tokenId: string, difficulty: Exclude<BotDif
       const threatened = next.players
         .filter((opponent) => opponent.id !== player.id)
         .some((opponent) => opponent.tokens.some((opponentToken) => {
-          if (opponentToken.state !== 'track') return false;
+          if (opponentToken.state !== 'track' || opponentToken.progress >= TRACK_LENGTH) return false;
           const distance = (square - getTrackSquare(opponentToken.color, opponentToken.progress) + TRACK_LENGTH) % TRACK_LENGTH;
           return distance >= 1 && distance <= 6;
         }));
