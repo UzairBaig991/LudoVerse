@@ -11,12 +11,17 @@ Sprint 4 — Firebase and online multiplayer (in progress)
 ### Sprint 1 — Foundation and UI
 
 - Expo Router routes and the initial home, onboarding, authentication, mode selection, profile, lobby, and results screens exist.
+- Reworked the home lobby with a responsive play banner, mode shortcuts, player coin balance, and bottom navigation using LudoVerse's original visual style.
+- Applied the supplied plum, magenta, and gold direction across the home, match setup, room, profile, and other main routes while retaining original LudoVerse artwork.
 - A shared dark theme and initial game screen are in place.
 - The auth screen started as UI scaffolding; email and anonymous Firebase Auth wiring is now tracked under Sprint 4.
 
 ### Sprint 2 — Board and game engine
 
 - Added a 52-cell board coordinate loop and centralized TypeScript game state and rules.
+- Rebuilt the in-game board as a responsive 15 by 15 traditional grid with four colored yards, safe stars, start cells, aligned home lanes, and a central finish.
+- Aligned player colors and home lanes with the reference board, and made two-player matches seat opposite colors.
+- Added the configurable three-consecutive-sixes turn penalty to the shared local and server-authoritative online rules.
 - Implemented legal moves, six-to-exit, exact finishing, safe squares, captures, extra turns, and winner detection.
 - Updated the game screen to let players choose a highlighted legal token.
 - Added engine tests for movement and rule edge cases.
@@ -79,11 +84,15 @@ Pending in this sprint:
 - `npm run lint` — passed.
 - Android JavaScript bundle export — passed.
 - Local engine and bot tests via Node's built-in test runner — 12 passed, including four deterministic full-match simulations.
+- Updated local engine and bot tests — 17 passed, including board alignment, opposite two-player seats, consecutive-six penalties, and deterministic full-match simulations.
 - Cloud Functions TypeScript build — passed.
 - Private-room helper tests — 2 passed.
+- Cloud Functions tests after the rules change — 8 passed.
 - Android JavaScript bundle export after private-room integration — passed.
 
 Firebase Auth and online room actions could not be exercised against a live project because project configuration has not been provided. Cloud Functions have not been deployed or emulator-tested. SQLite-backed history still needs a native device run.
 
 Online completion and reconnect helper tests are included in the Functions test suite.
 Quick Match FIFO/capacity helper coverage is included; callable queue transactions still need Firebase Emulator validation.
+
+Firestore rules emulator setup now includes a demo-project Firestore emulator config, rule unit tests for profiles, rooms, matches, quick-match tickets, and default-deny collections, and the `npm run test:firestore-rules` command. Lint and TypeScript checks pass. The emulator test run could not finish because the Firestore emulator JAR download stalled in this environment; rerun the command when the download endpoint is reachable.

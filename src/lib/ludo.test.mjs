@@ -5,6 +5,8 @@ import {
   PLAYER_META,
   SAFE_SQUARES,
   TRACK,
+  DEFAULT_RULES,
+  FINISH_PATH,
   advanceToken,
   canTokenMove,
   createGameState,
@@ -51,6 +53,57 @@ test('the board loop has 52 unique cells and finishing requires the exact number
   assert.equal(hasPlayerWon({ id: 'red', name: 'Red', tokens: Array.from({ length: 4 }, (_, index) => ({ ...finished, id: `red-${index + 1}`, index })) }), true);
 });
 
+test('two-player matches use opposite red and yellow starting seats', () => {
+  const game = createGameState(2);
+  assert.deepEqual(game.players.map((player) => player.id), ['red', 'yellow']);
+  assert.equal((PLAYER_META.yellow.entry - PLAYER_META.red.entry + 52) % 52, 26);
+});
+
+test('each color starts on a safe square and enters its aligned six-cell home lane', () => {
+  for (const color of ['red', 'green', 'yellow', 'blue']) {
+    const entry = PLAYER_META[color].entry;
+    const previous = TRACK[(entry + TRACK.length - 1) % TRACK.length];
+    const firstHomeCell = FINISH_PATH[color][0];
+    const distance = Math.abs(previous.x - firstHomeCell.x) + Math.abs(previous.y - firstHomeCell.y);
+    assert.ok(SAFE_SQUARES.has(entry), `${color} start must be safe`);
+    assert.equal(FINISH_PATH[color].length, 6);
+    assert.ok(Math.abs(distance - 100 / 15) < 0.001, `${color} home lane should connect to the shared track`);
+  }
+});
+
+test('a third consecutive six forfeits that roll and passes the turn', () => {
+  let state = createGameState(2);
+  state = rollForCurrentPlayer(state, () => 5 / 6);
+  state = moveToken(state, 'red-1');
+  state = rollForCurrentPlayer(state, () => 5 / 6);
+  state = moveToken(state, 'red-2');
+  assert.equal(state.consecutiveSixes, 2);
+
+  const thirdSix = rollForCurrentPlayer(state, () => 5 / 6);
+  assert.equal(thirdSix.turnIndex, 1);
+  assert.equal(thirdSix.phase, 'rolling');
+  assert.equal(thirdSix.consecutiveSixes, 0);
+  assert.equal(thirdSix.players[0].tokens[0].state, 'track');
+  assert.equal(thirdSix.players[0].tokens[1].state, 'track');
+  assert.equal(thirdSix.players[0].tokens[2].state, 'home');
+});
+
+test('a non-six roll resets the consecutive-six counter', () => {
+  let state = rollForCurrentPlayer(createGameState(2), () => 5 / 6);
+  state = moveToken(state, 'red-1');
+  const nextRoll = rollForCurrentPlayer(state, () => 0);
+  assert.equal(nextRoll.consecutiveSixes, 0);
+  assert.equal(nextRoll.phase, 'moving');
+});
+
+test('the three-sixes penalty can be disabled by a selected ruleset', () => {
+  const state = { ...createGameState(2), consecutiveSixes: 2 };
+  const result = rollForCurrentPlayer(state, () => 5 / 6, { ...DEFAULT_RULES, threeSixesLoseTurn: false });
+  assert.equal(result.turnIndex, 0);
+  assert.equal(result.phase, 'moving');
+  assert.equal(result.consecutiveSixes, 3);
+});
+
 test('tokens continue moving through the six home-lane cells before finishing', () => {
   const laneToken = { id: 'red-1', color: 'red', index: 0, state: 'track', progress: 52 };
   const nextCell = advanceToken(laneToken, 4);
@@ -65,14 +118,14 @@ test('tokens continue moving through the six home-lane cells before finishing', 
 test('a token on a safe square cannot be captured', () => {
   const safe = [...SAFE_SQUARES][1];
   const redProgress = (safe - PLAYER_META.red.entry + 52) % 52;
-  const greenProgress = (safe - PLAYER_META.green.entry + 52) % 52;
+  const yellowProgress = (safe - PLAYER_META.yellow.entry + 52) % 52;
   const state = {
     ...createGameState(2),
     phase: 'moving',
     dice: 1,
     players: [
       { ...createGameState(2).players[0], tokens: [{ id: 'red-1', color: 'red', index: 0, state: 'track', progress: redProgress - 1 }, ...createGameState(2).players[0].tokens.slice(1)] },
-      { ...createGameState(2).players[1], tokens: [{ id: 'green-1', color: 'green', index: 0, state: 'track', progress: greenProgress }, ...createGameState(2).players[1].tokens.slice(1)] },
+      { ...createGameState(2).players[1], tokens: [{ id: 'yellow-1', color: 'yellow', index: 0, state: 'track', progress: yellowProgress }, ...createGameState(2).players[1].tokens.slice(1)] },
     ],
   };
   const result = moveToken(state, 'red-1');
@@ -82,7 +135,7 @@ test('a token on a safe square cannot be captured', () => {
 test('an opponent on an unsafe square is sent home on capture', () => {
   const target = 2;
   const redProgress = (target - PLAYER_META.red.entry + 52) % 52;
-  const greenProgress = (target - PLAYER_META.green.entry + 52) % 52;
+  const yellowProgress = (target - PLAYER_META.yellow.entry + 52) % 52;
   const initial = createGameState(2);
   const state = {
     ...initial,
@@ -90,12 +143,12 @@ test('an opponent on an unsafe square is sent home on capture', () => {
     dice: 1,
     players: [
       { ...initial.players[0], tokens: [{ id: 'red-1', color: 'red', index: 0, state: 'track', progress: redProgress - 1 }, ...initial.players[0].tokens.slice(1)] },
-      { ...initial.players[1], tokens: [{ id: 'green-1', color: 'green', index: 0, state: 'track', progress: greenProgress }, ...initial.players[1].tokens.slice(1)] },
+      { ...initial.players[1], tokens: [{ id: 'yellow-1', color: 'yellow', index: 0, state: 'track', progress: yellowProgress }, ...initial.players[1].tokens.slice(1)] },
     ],
   };
   const result = moveToken(state, 'red-1');
   assert.equal(result.players[1].tokens[0].state, 'home');
-  assert.equal(result.lastCapture, 'green-1');
+  assert.equal(result.lastCapture, 'yellow-1');
   assert.equal(result.turnIndex, 0);
 });
 

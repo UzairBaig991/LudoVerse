@@ -81,7 +81,7 @@ export default function MatchmakingScreen() {
   };
 
   return (
-    <LinearGradient colors={['#10152A', '#151B35', '#1A254A']} style={styles.background}>
+    <LinearGradient colors={['#24102F', '#351345', '#551A4C']} style={styles.background}>
       <View style={styles.container}>
         <Text style={styles.eyebrow}>Quick Match</Text>
         <Text style={styles.title}>{searchExpired ? 'Search expired' : `Finding ${playerCount} players`}</Text>

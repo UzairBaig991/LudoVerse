@@ -28,7 +28,7 @@ export default function JoinRoomScreen() {
   };
 
   return (
-    <LinearGradient colors={['#10152A', '#151B35', '#1A254A']} style={styles.background}>
+    <LinearGradient colors={['#24102F', '#351345', '#551A4C']} style={styles.background}>
       <View style={styles.container}>
         <Text style={styles.eyebrow}>Play With Friends</Text>
         <Text style={styles.title}>Join a room</Text>

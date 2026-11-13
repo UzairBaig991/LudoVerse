@@ -70,7 +70,7 @@ export default function RoomScreen() {
   };
 
   return (
-    <LinearGradient colors={['#10152A', '#151B35', '#1A254A']} style={styles.background}>
+    <LinearGradient colors={['#24102F', '#351345', '#551A4C']} style={styles.background}>
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.eyebrow}>Private Room</Text>
         <Text style={styles.title}>{roomCode ? 'Room Lobby' : 'Create a room'}</Text>
@@ -156,31 +156,31 @@ export default function RoomScreen() {
 const styles = StyleSheet.create({
   background: { flex: 1 },
   container: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 32 },
-  eyebrow: { color: '#FFD700', fontSize: 12, fontWeight: '700', marginBottom: 8, letterSpacing: 1.4, textTransform: 'uppercase' },
+  eyebrow: { color: '#FFD45A', fontSize: 12, fontWeight: '700', marginBottom: 8, letterSpacing: 1.4, textTransform: 'uppercase' },
   title: { color: '#FFFFFF', fontSize: 34, fontWeight: '800', marginBottom: 14 },
-  subtitle: { color: '#D7E3FF', lineHeight: 22, marginBottom: 20 },
+  subtitle: { color: '#F0D5E9', lineHeight: 22, marginBottom: 20 },
   loader: { marginVertical: 32 },
-  codeCard: { backgroundColor: 'rgba(17,24,39,0.8)', borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', padding: 20, alignItems: 'center', marginBottom: 18 },
-  codeLabel: { color: '#AFC5FF', fontSize: 12, textTransform: 'uppercase', letterSpacing: 1.1 },
+  codeCard: { backgroundColor: 'rgba(88,27,83,0.78)', borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,202,228,0.2)', padding: 20, alignItems: 'center', marginBottom: 18 },
+  codeLabel: { color: '#EAB8E0', fontSize: 12, textTransform: 'uppercase', letterSpacing: 1.1 },
   code: { color: '#FFFFFF', fontSize: 34, fontWeight: '800', letterSpacing: 3, marginTop: 8 },
-  meta: { color: '#D7E3FF', marginTop: 10 },
-  shareText: { color: '#FFD700', fontWeight: '700', marginTop: 14, padding: 6 },
+  meta: { color: '#F0D5E9', marginTop: 10 },
+  shareText: { color: '#FFD45A', fontWeight: '700', marginTop: 14, padding: 6 },
   playerList: { marginBottom: 20 },
-  playerRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 8, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.08)' },
+  playerRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 8, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,217,243,0.12)' },
   playerName: { color: '#FFFFFF', fontWeight: '700', flexShrink: 1 },
   readyText: { color: '#4CAF50', fontWeight: '700' },
   notReady: { color: '#FFCA70' },
-  primaryButton: { backgroundColor: '#FFD700', borderRadius: 16, paddingVertical: 16, alignItems: 'center', minHeight: 54, justifyContent: 'center' },
-  primaryButtonText: { color: '#10152A', fontWeight: '800', fontSize: 17 },
-  secondaryButton: { backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 16, paddingVertical: 15, alignItems: 'center', marginBottom: 12 },
+  primaryButton: { backgroundColor: '#FFD45A', borderRadius: 16, paddingVertical: 16, alignItems: 'center', minHeight: 54, justifyContent: 'center' },
+  primaryButtonText: { color: '#4B1A53', fontWeight: '800', fontSize: 17 },
+  secondaryButton: { backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 16, paddingVertical: 15, alignItems: 'center', marginBottom: 12 },
   secondaryButtonText: { color: '#FFFFFF', fontWeight: '700' },
   disabled: { opacity: 0.5 },
-  waitText: { color: '#B9C9FF', textAlign: 'center', marginTop: 10 },
-  notice: { backgroundColor: 'rgba(255,215,0,0.1)', borderColor: 'rgba(255,215,0,0.4)', borderWidth: 1, padding: 16, borderRadius: 16 },
-  noticeTitle: { color: '#FFD700', fontWeight: '800', marginBottom: 6 },
-  noticeText: { color: '#D7E3FF', lineHeight: 20 },
-  openGameButton: { alignSelf: 'flex-start', backgroundColor: '#FFD700', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 11, marginTop: 14 },
-  openGameText: { color: '#10152A', fontWeight: '800' },
+  waitText: { color: '#E8C5E8', textAlign: 'center', marginTop: 10 },
+  notice: { backgroundColor: 'rgba(255,212,90,0.1)', borderColor: 'rgba(255,212,90,0.4)', borderWidth: 1, padding: 16, borderRadius: 16 },
+  noticeTitle: { color: '#FFD45A', fontWeight: '800', marginBottom: 6 },
+  noticeText: { color: '#F0D5E9', lineHeight: 20 },
+  openGameButton: { alignSelf: 'flex-start', backgroundColor: '#FFD45A', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 11, marginTop: 14 },
+  openGameText: { color: '#4B1A53', fontWeight: '800' },
   completedBoardButton: { alignSelf: 'flex-start', marginTop: 12, paddingVertical: 8 },
   error: { color: '#FF9B9B', marginTop: 16, lineHeight: 20 },
   backButton: { alignSelf: 'center', padding: 16, marginTop: 14 },

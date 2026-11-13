@@ -51,7 +51,7 @@ export default function AuthScreen() {
   };
 
   return (
-    <LinearGradient colors={['#10152A', '#151B35']} style={styles.background}>
+    <LinearGradient colors={['#24102F', '#351345']} style={styles.background}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.container}>
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
           <Text style={styles.title}>{creatingAccount ? 'Create your account' : 'Welcome back'}</Text>

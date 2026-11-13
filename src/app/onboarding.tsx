@@ -22,7 +22,7 @@ const features = [
 
 export default function OnboardingScreen() {
   return (
-    <LinearGradient colors={['#0F172A', '#10152A', '#1A254A']} style={styles.background}>
+    <LinearGradient colors={['#24102F', '#351345', '#551A4C']} style={styles.background}>
       <View style={styles.content}>
         <Text style={styles.eyebrow}>Welcome to LudoVerse</Text>
         <Text style={styles.title}>Build your legacy in every match.</Text>

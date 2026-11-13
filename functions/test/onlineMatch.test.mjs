@@ -21,7 +21,7 @@ test('server applies the requested die through the shared legal-move rules', () 
   assert.equal(rolled?.phase, 'moving');
   assert.equal(applyOnlineRoll(start, 7), null);
   assert.equal(applyOnlineRoll(rolled, 4), null);
-  assert.equal(applyOnlineMove(rolled, 'green-1'), null);
+  assert.equal(applyOnlineMove(rolled, 'yellow-1'), null);
   const moved = applyOnlineMove(rolled, 'red-1');
   assert.equal(moved?.players[0]?.tokens[0]?.state, 'track');
   assert.equal(moved?.phase, 'rolling');
@@ -37,15 +37,15 @@ test('completed match record awards the winning color to the matching room membe
   const finishedGame = {
     ...game,
     phase: 'complete',
-    winner: 'green',
-    players: game.players.map((player) => player.id === 'green' ? {
+    winner: 'yellow',
+    players: game.players.map((player) => player.id === 'yellow' ? {
       ...player,
       tokens: player.tokens.map((token) => ({ ...token, state: 'finish', progress: GOAL_PROGRESS })),
     } : player),
   };
   const result = buildOnlineMatchRecord('ABCD2345', 'host-uid', seats, finishedGame);
   assert.equal(result.winnerUid, 'guest-uid');
-  assert.equal(result.winnerColor, 'green');
+  assert.equal(result.winnerColor, 'yellow');
   assert.deepEqual(result.playerUids, ['host-uid', 'guest-uid']);
   assert.equal(result.status, 'completed');
   assert.throws(() => buildOnlineMatchRecord('ABCD2345', 'host-uid', seats, initializeOnlineGame(seats)), /winner/);

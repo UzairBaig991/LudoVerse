@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { MatchMode, useGameStore } from '../store/gameStore';
 
 const modes: MatchMode[] = [
@@ -35,8 +35,8 @@ export default function GameModeScreen() {
   };
 
   return (
-    <LinearGradient colors={['#10152A', '#151B35', '#1A254A']} style={styles.background}>
-      <View style={styles.container}>
+    <LinearGradient colors={['#24102F', '#351345', '#551A4C']} style={styles.background}>
+      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <Text style={styles.title}>Choose a match</Text>
         <Text style={styles.subtitle}>Select your preferred LudoVerse mode.</Text>
 
@@ -86,31 +86,31 @@ export default function GameModeScreen() {
         <TouchableOpacity style={styles.primaryButton} onPress={handleStart}>
           <Text style={styles.primaryButtonText}>Start Match</Text>
         </TouchableOpacity>
-      </View>
+      </ScrollView>
     </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   background: { flex: 1 },
-  container: { flex: 1, justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 40 },
+  container: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 20, paddingVertical: 30 },
   title: { color: '#FFFFFF', fontSize: 32, fontWeight: '800', marginBottom: 8 },
-  subtitle: { color: '#B9C9FF', fontSize: 14, marginBottom: 18 },
+  subtitle: { color: '#F0D5E9', fontSize: 14, marginBottom: 18 },
   modeCard: {
-    backgroundColor: 'rgba(19,25,40,0.75)',
+    backgroundColor: 'rgba(94,29,88,0.78)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: 'rgba(255,207,238,0.14)',
     borderRadius: 16,
     paddingVertical: 16,
     paddingHorizontal: 18,
     marginBottom: 12,
   },
   selectedModeCard: {
-    borderColor: '#FFD700',
-    backgroundColor: 'rgba(255,215,0,0.12)',
+    borderColor: '#FFD45A',
+    backgroundColor: 'rgba(255,77,173,0.15)',
   },
   modeText: { color: '#FFFFFF', fontWeight: '700', fontSize: 15 },
-  selectedModeText: { color: '#FFD700' },
+  selectedModeText: { color: '#FFD45A' },
   playerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -118,31 +118,31 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   difficultySection: { marginTop: 6 },
-  difficultyLabel: { color: '#B9C9FF', fontSize: 13, fontWeight: '700', marginLeft: 4 },
+  difficultyLabel: { color: '#F0D5E9', fontSize: 13, fontWeight: '700', marginLeft: 4 },
   botMatchHint: { color: '#D7E3FF', marginTop: 18, marginBottom: 20, textAlign: 'center', fontWeight: '700' },
   playerButton: {
     flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: 'rgba(255,255,255,0.07)',
     borderRadius: 12,
     paddingVertical: 12,
     marginHorizontal: 4,
     alignItems: 'center',
   },
   selectedPlayerButton: {
-    backgroundColor: 'rgba(255,215,0,0.18)',
+    backgroundColor: 'rgba(255,212,90,0.18)',
     borderWidth: 1,
-    borderColor: '#FFD700',
+    borderColor: '#FFD45A',
   },
   playerButtonText: { color: '#FFFFFF', fontWeight: '700' },
-  selectedPlayerText: { color: '#FFD700' },
+  selectedPlayerText: { color: '#FFD45A' },
   primaryButton: {
-    backgroundColor: '#FFD700',
+    backgroundColor: '#FFD45A',
     paddingVertical: 16,
     borderRadius: 16,
     alignItems: 'center',
   },
   primaryButtonText: {
-    color: '#10152A',
+    color: '#4B1A53',
     fontSize: 17,
     fontWeight: '800',
   },

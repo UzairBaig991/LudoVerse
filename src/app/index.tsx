@@ -22,7 +22,7 @@ export default function SplashScreen() {
   }, [scale]);
 
   return (
-    <LinearGradient colors={['#10152A', '#151B35', '#1E2A4F']} style={styles.container}>
+    <LinearGradient colors={['#24102F', '#351345', '#551A4C']} style={styles.container}>
       <Animated.View style={[styles.logoCard, { transform: [{ scale }] }]}>
         <View style={styles.logoGlow} />
         <Text style={styles.gameName}>LudoVerse</Text>

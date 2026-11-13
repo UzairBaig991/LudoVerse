@@ -12,7 +12,7 @@ export default function ResultsScreen() {
   const winnerName = isOnlineResult ? params.winnerName ?? 'Player' : PLAYER_META[winner]?.name ?? 'Player';
 
   return (
-    <LinearGradient colors={['#10152A', '#151B35', '#1A254A']} style={styles.background}>
+    <LinearGradient colors={['#24102F', '#351345', '#551A4C']} style={styles.background}>
       <View style={styles.container}>
         <Text style={styles.eyebrow}>{isOnlineResult ? 'Online match complete' : 'Local match complete'}</Text>
         <Text style={styles.title}>{winnerName} wins</Text>

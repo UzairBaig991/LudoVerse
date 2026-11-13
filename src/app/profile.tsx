@@ -7,7 +7,7 @@ export default function ProfileScreen() {
   const { profile } = useGameStore();
 
   return (
-    <LinearGradient colors={['#10152A', '#151B35', '#1A254A']} style={styles.background}>
+    <LinearGradient colors={['#24102F', '#351345', '#551A4C']} style={styles.background}>
       <View style={styles.container}>
         <View style={styles.header}>
           <View style={styles.avatar} />

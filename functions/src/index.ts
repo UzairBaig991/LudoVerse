@@ -395,12 +395,20 @@ export const rollOnlineDie = onCall(async (request) => {
     if (!snapshot.exists) throw new HttpsError('not-found', 'That room does not exist.');
     const room = snapshot.data() as Room;
     const duplicate = duplicateActionResult(room, requestId, uid, 'roll');
-    if (duplicate) return duplicate as { die: number; hasMove: boolean };
+    if (duplicate) return duplicate as { die: number; hasMove: boolean; lostTurnAfterThreeSixes: boolean };
     if ((room.stateVersion ?? 0) !== stateVersion) throw new HttpsError('failed-precondition', 'The game changed. Wait for the board to update and try again.');
     const state = validateTurn(room, uid, 'rolling');
     const nextState = applyOnlineRoll(state, die);
     if (!nextState) throw new HttpsError('failed-precondition', 'The game cannot roll right now.');
-    const result = { die, hasMove: nextState.phase === 'moving', stateVersion: stateVersion + 1 };
+    const lostTurnAfterThreeSixes = die === 6
+      && (state.consecutiveSixes ?? 0) >= 2
+      && nextState.turnIndex !== state.turnIndex;
+    const result = {
+      die,
+      hasMove: nextState.phase === 'moving',
+      lostTurnAfterThreeSixes,
+      stateVersion: stateVersion + 1,
+    };
     transaction.update(roomRef, {
       gameState: nextState,
       stateVersion: result.stateVersion,

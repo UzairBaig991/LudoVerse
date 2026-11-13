@@ -13,9 +13,9 @@ test('bot only chooses a legal move', () => {
 test('hard bot prioritizes a safe capture when one is available', () => {
   const initial = createGameState(2);
   const red = initial.players[0];
-  const green = initial.players[1];
+  const yellow = initial.players[1];
   const targetSquare = 2;
-  const greenCaptureProgress = (targetSquare - PLAYER_META.green.entry + 52) % 52 - 1;
+  const yellowCaptureProgress = (targetSquare - PLAYER_META.yellow.entry + 52) % 52 - 1;
   const state = {
     ...initial,
     turnIndex: 1,
@@ -23,14 +23,14 @@ test('hard bot prioritizes a safe capture when one is available', () => {
     dice: 1,
     players: [
       { ...red, tokens: [{ ...red.tokens[0], state: 'track', progress: (targetSquare - PLAYER_META.red.entry + 52) % 52 }, ...red.tokens.slice(1)] },
-      { ...green, tokens: [
-        { ...green.tokens[0], state: 'track', progress: greenCaptureProgress },
-        { ...green.tokens[1], state: 'track', progress: 5 },
-        ...green.tokens.slice(2),
+      { ...yellow, tokens: [
+        { ...yellow.tokens[0], state: 'track', progress: yellowCaptureProgress },
+        { ...yellow.tokens[1], state: 'track', progress: 15 },
+        ...yellow.tokens.slice(2),
       ] },
     ],
   };
-  assert.equal(chooseBotMove(state, 'Hard'), 'green-1');
+  assert.equal(chooseBotMove(state, 'Hard'), 'yellow-1');
 });
 
 test('two medium bots complete deterministic local matches without illegal or stuck turns', () => {

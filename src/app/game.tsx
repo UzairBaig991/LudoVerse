@@ -5,10 +5,10 @@ import { AccessibilityInfo, ActivityIndicator, Animated, Pressable, StyleSheet, 
 import { playSound } from '../lib/audio';
 import { chooseBotMove } from '../lib/bot';
 import { recordLocalMatch } from '../lib/matchHistory';
+import { LudoBoard } from '../components/game/LudoBoard';
 import {
   GameState,
   PLAYER_META,
-  TRACK,
   createGameState,
   getLegalTokens,
   getTokenDisplayPosition,
@@ -67,7 +67,7 @@ export default function GameScreen() {
   const [onlineError, setOnlineError] = useState('');
   const pendingActionId = useRef<string | null>(null);
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
-  const boardSize = Math.max(180, Math.min(windowWidth - 36, windowHeight * 0.42, 420));
+  const boardSize = Math.max(180, Math.min(windowWidth - 28, windowHeight * 0.46, 460));
   const playerCount = useGameStore((state) => state.playerCount);
   const selectedMode = useGameStore((state) => state.selectedMode);
   const botDifficulty = useGameStore((state) => state.botDifficulty);
@@ -87,7 +87,7 @@ export default function GameScreen() {
 
   const currentPlayer = game.players[game.turnIndex]!;
   const isOnlineTurn = !roomCode || onlineRoom?.players.find((player) => player.seat === game.turnIndex)?.uid === firebaseAuth?.currentUser?.uid;
-  const isBotTurn = !roomCode && selectedMode === 'Play Against Computer' && currentPlayer.id === 'green';
+  const isBotTurn = !roomCode && selectedMode === 'Play Against Computer' && game.turnIndex === 1;
   const winner = game.winner;
 
   useEffect(() => {
@@ -180,7 +180,12 @@ export default function GameScreen() {
           }
         }
       } else {
-        setMessage(roll === 6 ? 'Bot has no legal move and rolls again.' : 'Bot has no legal move. Your turn.');
+        const lostTurnAfterThreeSixes = roll === 6
+          && (game.consecutiveSixes ?? 0) >= 2
+          && rolled.turnIndex !== game.turnIndex;
+        setMessage(lostTurnAfterThreeSixes
+          ? 'Bot rolled three sixes. Your turn.'
+          : roll === 6 ? 'Bot has no legal move and rolls again.' : 'Bot has no legal move. Your turn.');
       }
       botProcessing.current = false;
       setRolling(false);
@@ -199,7 +204,9 @@ export default function GameScreen() {
       try {
         const result = await rollOnlineDie(roomCode, requestId, onlineRoom.stateVersion ?? 0);
         setDice(result.die);
-        setMessage(result.hasMove ? `${currentPlayer.name} rolled ${result.die}. Choose a token.` : `${currentPlayer.name} rolled ${result.die} and has no legal move.`);
+        setMessage(result.lostTurnAfterThreeSixes
+          ? `${currentPlayer.name} rolled three sixes. The turn passes.`
+          : result.hasMove ? `${currentPlayer.name} rolled ${result.die}. Choose a token.` : `${currentPlayer.name} rolled ${result.die} and has no legal move.`);
         animateDiceRoll();
         if (soundOn) await playSound('roll');
       } catch (error) {
@@ -211,9 +218,14 @@ export default function GameScreen() {
     }
     const nextGame = rollForCurrentPlayer(game);
     const nextRoll = nextGame.dice!;
+    const lostTurnAfterThreeSixes = nextRoll === 6
+      && (game.consecutiveSixes ?? 0) >= 2
+      && nextGame.turnIndex !== game.turnIndex;
     setRolling(true);
     setDice(nextRoll);
-    setMessage(`${PLAYER_META[currentPlayer.id].name} rolled ${nextRoll}.`);
+    setMessage(lostTurnAfterThreeSixes
+      ? `${PLAYER_META[currentPlayer.id].name} rolled three sixes. The turn passes.`
+      : `${PLAYER_META[currentPlayer.id].name} rolled ${nextRoll}.`);
     setLocalGame(nextGame);
 
     animateDiceRoll();
@@ -222,11 +234,15 @@ export default function GameScreen() {
       await playSound('roll');
     }
 
-    const movable = getLegalTokens(currentPlayer, nextRoll);
+    const movable = nextGame.phase === 'moving'
+      ? getLegalTokens(nextGame.players[nextGame.turnIndex]!, nextRoll)
+      : [];
     if (!movable.length) {
       setTimeout(() => {
         setRolling(false);
-        setMessage(`${PLAYER_META[currentPlayer.id].name} has no legal move. ${PLAYER_META[nextGame.players[nextGame.turnIndex]!.id].name} is up next.`);
+        setMessage(lostTurnAfterThreeSixes
+          ? `${PLAYER_META[currentPlayer.id].name} rolled three sixes. ${PLAYER_META[nextGame.players[nextGame.turnIndex]!.id].name} is up next.`
+          : `${PLAYER_META[currentPlayer.id].name} has no legal move. ${PLAYER_META[nextGame.players[nextGame.turnIndex]!.id].name} is up next.`);
       }, 620);
       return;
     }
@@ -276,7 +292,7 @@ export default function GameScreen() {
 
   if (roomCode && (!onlineRoom || !onlineRoom.gameState)) {
     return (
-      <LinearGradient colors={['#0F172A', '#10152A', '#1A254A']} style={styles.background}>
+      <LinearGradient colors={['#24102F', '#351345', '#4A174A']} style={styles.background}>
         <View style={styles.loadingContainer}>
           {onlineError ? <Text style={styles.message}>{onlineError}</Text> : <ActivityIndicator color="#FFD700" size="large" />}
           {!onlineError ? <Text style={styles.message}>{onlineRoom?.status === 'waiting' ? 'Waiting for the host to start this room.' : 'Connecting to the room…'}</Text> : null}
@@ -287,46 +303,39 @@ export default function GameScreen() {
   }
 
   return (
-    <LinearGradient colors={['#0F172A', '#10152A', '#1A254A']} style={styles.background}>
+    <LinearGradient colors={['#24102F', '#351345', '#4A174A']} style={styles.background}>
       <View style={styles.container}>
         <View style={styles.headerRow}>
-          <Pressable onPress={() => roomCode ? router.replace({ pathname: '/room', params: { roomCode } }) : router.replace('/home')}>
-            <Text style={styles.exitText}>Exit</Text>
+          <Pressable accessibilityRole="button" onPress={() => roomCode ? router.replace({ pathname: '/room', params: { roomCode } }) : router.replace('/home')} style={styles.headerAction}>
+            <Text style={styles.exitText}>‹  EXIT</Text>
           </Pressable>
-          <Text style={styles.statusText}>Turn {game.turnIndex + 1} of {game.players.length}</Text>
-          <Pressable onPress={toggleSound}>
-            <Text style={styles.soundText}>{soundOn ? 'Sound On' : 'Mute'}</Text>
+          <Text style={styles.statusText}>CLASSIC  ·  {game.turnIndex + 1}/{game.players.length}</Text>
+          <Pressable accessibilityRole="button" accessibilityLabel={soundOn ? 'Mute sound' : 'Turn sound on'} onPress={toggleSound} style={styles.headerAction}>
+            <Text style={styles.soundText}>{soundOn ? '♫' : '♪̸'}</Text>
           </Pressable>
         </View>
 
         <View style={styles.playerBar}>
-          {game.players.map((player) => (
-            <View key={player.id} style={[styles.playerPill, { backgroundColor: `${PLAYER_META[player.id].accent}22` }]}> 
-              <Text style={[styles.playerColor, { color: PLAYER_META[player.id].accent }]}>{isBotTurn && player.id === 'green' ? 'Bot' : roomCode ? player.name : PLAYER_META[player.id].name}</Text>
+          {game.players.map((player, index) => (
+            <View key={player.id} style={[styles.playerPill, index === game.turnIndex && styles.activePlayerPill, { backgroundColor: `${PLAYER_META[player.id].accent}24`, borderColor: index === game.turnIndex ? '#FFD55C' : `${PLAYER_META[player.id].accent}60` }]}>
+              <View style={[styles.playerIndicator, { backgroundColor: PLAYER_META[player.id].accent }]}>
+                <Text style={styles.playerIndicatorText}>{player.name.charAt(0).toUpperCase()}</Text>
+              </View>
+              <Text numberOfLines={1} style={[styles.playerColor, { color: PLAYER_META[player.id].accent }]}>{!roomCode && selectedMode === 'Play Against Computer' && index === 1 ? 'BOT' : roomCode ? player.name : PLAYER_META[player.id].name}</Text>
+              {index === game.turnIndex ? <View style={styles.activeDot} /> : null}
             </View>
           ))}
         </View>
 
         <View style={styles.boardWrap}>
-          <LinearGradient colors={['#1A254A', '#10152A']} style={[styles.board, { width: boardSize, height: boardSize }]}>
-            <View style={[styles.quadrant, styles.redQuadrant]} />
-            <View style={[styles.quadrant, styles.greenQuadrant]} />
-            <View style={[styles.quadrant, styles.yellowQuadrant]} />
-            <View style={[styles.quadrant, styles.blueQuadrant]} />
-
-            {TRACK.map((point, index) => (
-              <View key={`${point.x}-${point.y}-${index}`} style={[styles.trackDot, { width: boardSize / 32, height: boardSize / 32, borderRadius: boardSize / 64, left: `${point.x}%`, top: `${point.y}%`, marginLeft: -boardSize / 64, marginTop: -boardSize / 64 }]} />
-            ))}
-
-            <View style={[styles.centerPath, { width: boardSize * 0.14, height: boardSize * 0.14, borderRadius: boardSize * 0.07, marginLeft: -boardSize * 0.07, marginTop: -boardSize * 0.07 }]} />
-
+          <LudoBoard size={boardSize}>
             {allTokens.map((token) => (
               <TokenChip key={token.id} token={token} color={PLAYER_META[token.color].accent} boardSize={boardSize} reducedMotion={reducedMotion}
                 selectable={!isBotTurn && isOnlineTurn && game.phase === 'moving' && getLegalTokens(currentPlayer, game.dice!).some((legal) => legal.id === token.id)}
                 onPress={() => selectToken(token)}
               />
             ))}
-          </LinearGradient>
+          </LudoBoard>
         </View>
 
         <View style={styles.bottomPanel}>
@@ -353,60 +362,26 @@ export default function GameScreen() {
 
 const styles = StyleSheet.create({
   background: { flex: 1 },
-  container: { flex: 1, paddingHorizontal: 18, paddingTop: 48, paddingBottom: 18 },
+  container: { flex: 1, paddingHorizontal: 12, paddingTop: 42, paddingBottom: 12 },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 28, gap: 18 },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 14,
+    marginBottom: 12,
   },
-  exitText: { color: '#FFCDD2', fontWeight: '700' },
-  statusText: { color: '#FFFFFF', fontWeight: '700', fontSize: 15 },
-  soundText: { color: '#B8C7FF', fontWeight: '700' },
-  playerBar: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 },
-  playerPill: { flex: 1, marginHorizontal: 4, borderRadius: 12, paddingVertical: 8, alignItems: 'center' },
-  playerColor: { fontWeight: '700' },
-  boardWrap: { alignItems: 'center', justifyContent: 'center' },
-  board: {
-    borderRadius: 30,
-    overflow: 'hidden',
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.09)',
-    position: 'relative',
-  },
-  quadrant: {
-    position: 'absolute',
-    width: '42%',
-    height: '42%',
-    borderRadius: 28,
-    opacity: 0.74,
-  },
-  redQuadrant: { top: 0, left: 0, backgroundColor: 'rgba(244, 67, 54, 0.22)' },
-  greenQuadrant: { top: 0, right: 0, backgroundColor: 'rgba(76, 175, 80, 0.22)' },
-  yellowQuadrant: { bottom: 0, left: 0, backgroundColor: 'rgba(255, 193, 7, 0.22)' },
-  blueQuadrant: { bottom: 0, right: 0, backgroundColor: 'rgba(33, 150, 243, 0.22)' },
-  trackDot: {
-    position: 'absolute',
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: 'rgba(255,255,255,0.42)',
-    marginLeft: -5,
-    marginTop: -5,
-  },
-  centerPath: {
-    position: 'absolute',
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    left: '50%',
-    top: '50%',
-    marginLeft: -22,
-    marginTop: -22,
-    backgroundColor: '#FFD700',
-    opacity: 0.75,
-  },
+  headerAction: { minWidth: 42, minHeight: 36, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.08)' },
+  exitText: { color: '#FFC7D9', fontWeight: '900', fontSize: 11, letterSpacing: 0.6 },
+  statusText: { color: '#FFF3FD', fontWeight: '900', fontSize: 12, letterSpacing: 1.1 },
+  soundText: { color: '#FFD55C', fontWeight: '900', fontSize: 19 },
+  playerBar: { flexDirection: 'row', justifyContent: 'space-between', gap: 5, marginBottom: 10 },
+  playerPill: { flex: 1, minWidth: 0, minHeight: 38, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: 13, paddingHorizontal: 5, paddingVertical: 6, borderWidth: 1 },
+  activePlayerPill: { elevation: 4, shadowColor: '#FFD55C', shadowOpacity: 0.24, shadowRadius: 7, shadowOffset: { width: 0, height: 2 } },
+  playerIndicator: { width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginRight: 5, borderWidth: 1, borderColor: '#FFF8E8' },
+  playerIndicatorText: { color: '#FFFFFF', fontSize: 10, fontWeight: '900' },
+  playerColor: { flexShrink: 1, fontSize: 10, fontWeight: '900' },
+  activeDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: '#FFD55C', marginLeft: 4 },
+  boardWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   token: {
     position: 'absolute',
     width: 20,
@@ -414,8 +389,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 2,
     shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
+    shadowOpacity: 0.32,
+    shadowRadius: 5,
     shadowOffset: { width: 0, height: 2 },
     top: 0,
     left: 0,
@@ -423,46 +398,46 @@ const styles = StyleSheet.create({
   bottomPanel: {
     flexDirection: 'row',
     alignItems: 'stretch',
-    marginTop: 18,
-    gap: 12,
+    marginTop: 12,
+    gap: 10,
   },
   dicePanel: {
     flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 20,
+    backgroundColor: 'rgba(111,43,103,0.64)',
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    padding: 16,
+    borderColor: 'rgba(255,215,126,0.32)',
+    padding: 12,
     alignItems: 'center',
   },
   infoPanel: {
     flex: 1.2,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderRadius: 20,
+    backgroundColor: 'rgba(66,25,74,0.78)',
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    padding: 18,
+    borderColor: 'rgba(210,139,206,0.25)',
+    padding: 13,
   },
-  label: { color: '#ABBAE8', fontSize: 12, textTransform: 'uppercase', letterSpacing: 1.1 },
+  label: { color: '#E4B9E2', fontSize: 10, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1.1 },
   dice: {
     width: 58,
     height: 58,
     borderRadius: 16,
-    backgroundColor: '#FFD700',
+    backgroundColor: '#FFD45A',
     justifyContent: 'center',
     alignItems: 'center',
     marginVertical: 10,
   },
-  diceValue: { color: '#10152A', fontWeight: '800', fontSize: 28 },
+  diceValue: { color: '#4B1A53', fontWeight: '900', fontSize: 28 },
   rollButton: {
     width: '100%',
-    backgroundColor: '#2196F3',
+    backgroundColor: '#FFD45A',
     borderRadius: 14,
     paddingVertical: 12,
     alignItems: 'center',
   },
-  rollButtonText: { color: '#FFFFFF', fontWeight: '700' },
+  rollButtonText: { color: '#4B1A53', fontWeight: '900', letterSpacing: 0.5 },
   disabledButton: { opacity: 0.55 },
-  playerName: { color: '#FFFFFF', fontSize: 18, fontWeight: '800', marginTop: 10 },
-  message: { marginTop: 8, color: '#DCE8FF', fontSize: 13, lineHeight: 18 },
+  playerName: { color: '#FFFFFF', fontSize: 16, fontWeight: '900', marginTop: 8 },
+  message: { marginTop: 6, color: '#F0DAEE', fontSize: 11, lineHeight: 16 },
 });

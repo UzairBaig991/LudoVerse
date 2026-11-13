@@ -75,7 +75,7 @@ export const cancelQuickMatch = () =>
 export const makeOnlineActionId = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
 
 export const rollOnlineDie = (roomCode: string, requestId: string, stateVersion: number) =>
-  callRoomFunction<{ roomCode: string; requestId: string; stateVersion: number }, { die: number; hasMove: boolean; stateVersion: number }>(
+  callRoomFunction<{ roomCode: string; requestId: string; stateVersion: number }, { die: number; hasMove: boolean; lostTurnAfterThreeSixes: boolean; stateVersion: number }>(
     'rollOnlineDie', { roomCode, requestId, stateVersion },
   );
 
