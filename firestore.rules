@@ -26,6 +26,11 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    match /rooms/{roomCode} {
+      allow get: if request.auth != null && request.auth.uid in resource.data.playerUids;
+      allow list, create, update, delete: if false;
+    }
+
     // Match state, dice rolls, rewards, and all unspecified collections are server-owned.
     match /{document=**} {
       allow read, write: if false;

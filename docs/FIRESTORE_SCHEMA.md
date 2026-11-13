@@ -17,11 +17,21 @@ Created after email registration when Firestore is configured.
 
 Users can read and update only their own profile. Client-side profile writes are limited by `firestore.rules`.
 
-### `rooms/{roomId}`
+### `rooms/{roomCode}`
 
-Reserved for private rooms and matchmaking. Clients currently have no read or write access. A later Cloud Function implementation should own room creation, seat assignment, readiness, state transitions, and cleanup.
+Created and updated by callable Cloud Functions only. A room code is eight characters from an ambiguity-reduced alphabet. The client can read a room only when its signed-in UID is in `playerUids`; client writes and room listing are denied.
 
-Suggested fields: `status`, `hostUid`, `playerCount`, `players`, `createdAt`, `updatedAt`, and `expiresAt`. Do not write authoritative game state from the mobile client.
+| Field | Type | Notes |
+| --- | --- | --- |
+| `roomCode` | string | Document ID and invite code. |
+| `hostUid` | string | UID allowed to start the room. |
+| `playerCount` | number | Room capacity from 2 to 4. |
+| `playerUids` | string[] | Membership list used by read rules. |
+| `players` | object[] | `{ uid, displayName, seat, ready }`; seat assignment is transactional. |
+| `status` | string | `waiting` or `playing`. |
+| `createdAt`, `updatedAt`, `expiresAt` | timestamp | Server-owned timestamps; waiting rooms expire after two hours. |
+
+The functions own room creation, seat allocation, readiness, and the waiting-to-playing transition. The current `playing` state does not yet include synchronized game state or turns.
 
 ### `matches/{matchId}`
 
@@ -31,4 +41,4 @@ Suggested fields: `roomId`, `playerUids`, `winnerUid`, `rankings`, `startedAt`, 
 
 ## Security status
 
-`firestore.rules` allows a user to manage only their own profile and denies all other client access. Room and match access stays denied until server functions and rules are implemented and tested together. Deploying rules requires linking this workspace to the intended Firebase project first.
+`firestore.rules` allows a user to manage only their own profile and read rooms they belong to. Room writes and match access are denied to clients. Cloud Functions use the Admin SDK and therefore bypass these rules; callable functions enforce membership, host authority, room capacity, and state transitions. Rules and functions still need Firebase Emulator validation and deployment to the intended project.

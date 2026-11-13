@@ -18,8 +18,6 @@ export interface LeaderboardEntry {
 
 interface GameStore {
   selectedMode: MatchMode;
-  roomCode: string;
-  rooms: string[];
   playerCount: number;
   botDifficulty: BotDifficulty;
   profile: {
@@ -34,24 +32,10 @@ interface GameStore {
   setSelectedMode: (mode: MatchMode) => void;
   setPlayerCount: (count: number) => void;
   setBotDifficulty: (difficulty: BotDifficulty) => void;
-  createRoom: () => void;
-  joinRoom: (code: string) => void;
-  resetRoom: () => void;
 }
-
-const createRoomCode = () => {
-  const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let code = '';
-  for (let i = 0; i < 6; i += 1) {
-    code += letters[Math.floor(Math.random() * letters.length)];
-  }
-  return code;
-};
 
 export const useGameStore = create<GameStore>((set) => ({
   selectedMode: 'Quick Match',
-  roomCode: 'LV-2048',
-  rooms: ['LV-2048', 'LV-4421'],
   playerCount: 4,
   botDifficulty: 'Medium',
   profile: {
@@ -71,14 +55,4 @@ export const useGameStore = create<GameStore>((set) => ({
   setSelectedMode: (mode) => set({ selectedMode: mode }),
   setPlayerCount: (count) => set({ playerCount: count }),
   setBotDifficulty: (botDifficulty) => set({ botDifficulty }),
-  createRoom: () =>
-    set((state) => {
-      const nextCode = createRoomCode();
-      return {
-        roomCode: nextCode,
-        rooms: [nextCode, ...state.rooms].slice(0, 4),
-      };
-    }),
-  joinRoom: (code) => set({ roomCode: code.trim().toUpperCase() || 'LV-2048' }),
-  resetRoom: () => set({ roomCode: 'LV-2048' }),
 }));

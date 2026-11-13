@@ -47,12 +47,17 @@ Pending in this sprint:
 - Connected email registration, email sign-in, password reset, and anonymous guest sign-in to Firebase Auth.
 - Kept local play available without Firebase configuration and disabled the unfinished Google flow.
 - Added restrictive Firestore rules and documented the planned data structure.
+- Added callable Cloud Functions for private-room creation, joining, readiness, and host-only start; seat assignment and state transitions run in Firestore transactions.
+- Connected the create/join lobby screens to the room callables and a member-only live room listener; removed the local fake-room store.
+- Restricted client room reads to room members and denied all direct room writes.
+- Starting a room now marks it as playing; the UI explains that synchronized turns are a later milestone.
 
 Pending in this sprint:
 
 - Add local Firebase project values and enable the selected Auth providers.
 - Validate account flows and profile creation against the configured Firebase project.
-- Implement private room creation and joining with server-owned seat allocation.
+- Configure Firebase Functions, deploy functions/rules, and verify private-room lifecycle with multiple authenticated devices.
+- Add Cloud Functions for authoritative dice, moves, matchmaking, and reconnect state.
 - Add Cloud Functions for authoritative dice, moves, matchmaking, and reconnect state.
 - Test Firestore rules with the Firebase Emulator before deployment.
 
@@ -71,4 +76,4 @@ Pending in this sprint:
 - Android JavaScript bundle export — passed.
 - Local engine and bot tests via Node's built-in test runner — 12 passed, including four deterministic full-match simulations.
 
-Firebase Auth could not be exercised against a live project because project configuration has not been provided. SQLite-backed history still needs a native device run.
+Firebase Auth and private-room callables could not be exercised against a live project because project configuration has not been provided. Cloud Functions have not been deployed. SQLite-backed history still needs a native device run.
